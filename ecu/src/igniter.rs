@@ -87,7 +87,9 @@ impl Igniter {
     }
 
     fn update_prefire_state(&mut self, hals: &mut HALs) {
-        if self.elapsed_since_state_transition > f32::from(self.timing_config.prefire_duration_ms) {
+        if self.elapsed_since_state_transition
+            > f32::from(self.timing_config.prefire_duration_ms) * 1e-3
+        {
             self.transition_state(IgniterState::Firing, hals);
         }
     }
@@ -103,7 +105,9 @@ impl Igniter {
     }
 
     fn update_firing_state(&mut self, hals: &mut HALs) {
-        if self.elapsed_since_state_transition > f32::from(self.timing_config.fire_duration_ms) {
+        if self.elapsed_since_state_transition
+            > f32::from(self.timing_config.fire_duration_ms) * 1e-3
+        {
             self.transition_state(IgniterState::Purge, hals);
         }
     }
@@ -112,14 +116,16 @@ impl Igniter {
 
     #[allow(clippy::unused_self)]
     fn enter_purging_state(&mut self, hals: &mut HALs) {
-        hals.hardware.set_sparking(true);
+        hals.hardware.set_sparking(false);
         hals.hardware.set_valve(Valve::IgniterFuelMain, 0);
         hals.hardware.set_valve(Valve::IgniterGOxMain, 255);
         hals.hardware.set_valve(Valve::IgniterFuelPurge, 255);
     }
 
     fn update_purging_state(&mut self, hals: &mut HALs) {
-        if self.elapsed_since_state_transition > f32::from(self.timing_config.purge_duration_ms) {
+        if self.elapsed_since_state_transition
+            > f32::from(self.timing_config.purge_duration_ms) * 1e-3
+        {
             self.transition_state(IgniterState::Idle, hals);
         }
     }

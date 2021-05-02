@@ -1,6 +1,8 @@
+use core::any::Any;
+
 use crate::{MAX_SENSORS, MAX_VALVES};
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Copy)]
 pub struct SensorConfig {
     pub sensor: Sensor,
     pub premin: f32,
@@ -36,6 +38,9 @@ pub enum Sensor {
 }
 
 pub trait ECUHardware {
+    /// Opens/closes a valve to a particular state. For solenoid valves, 0 is closed and >= 1 is
+    /// open. For any other kind of valve, 0 means fully closed and 255 means fully open. Any
+    /// value in between means a *linear* increase in open valve area.
     fn set_valve(&mut self, valve: Valve, state: u8);
     fn set_sparking(&mut self, state: bool);
 
@@ -48,6 +53,8 @@ pub trait ECUHardware {
     fn end_data_logging(&mut self);
     fn get_next_recorded_data_frame(&mut self) -> Option<ECUDataFrame>;
     fn get_data_collection_rate_hz(&self) -> u16;
+
+    fn any(&self) -> &dyn Any;
 }
 
 #[derive(Debug, Clone)]

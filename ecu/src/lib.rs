@@ -70,6 +70,18 @@ impl<'a> Ecu<'a> {
         self.igniter.abort(&mut self.hals);
     }
 
+    pub fn get_igniter(&mut self) -> &mut Igniter {
+        &mut self.igniter
+    }
+
+    pub fn get_ecu_hardware(&mut self) -> &mut dyn ECUHardware {
+        self.hals.hardware
+    }
+
+    pub fn get_comms(&mut self) -> &mut dyn CommsInterface {
+        self.hals.comms
+    }
+
     fn transmit_telemetry(&mut self) {
         let mut telem = ECUTelemtryData {
             ecu_data: ECUDataFrame {

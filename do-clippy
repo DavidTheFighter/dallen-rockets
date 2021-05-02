@@ -1,3 +1,4 @@
+cargo test
 cargo clean
 cargo fmt
 cargo clippy -- -W clippy::pedantic -A clippy::must_use_candidate -A clippy::new_without_default
