@@ -52,10 +52,17 @@ impl<'a> Ecu<'a> {
     }
 
     pub fn on_packet(&mut self, packet: &Packet) {
-        if let Packet::Abort = packet {
-            self.abort();
-        } else {
-            self.igniter.on_packet(&packet, &mut self.hals);
+        match packet {
+            Packet::SetValve { valve, state } => self.hals.hardware.set_valve(*valve, *state),
+            Packet::ConfigureSensor(config) => self.hals.hardware.configure_sensor(config),
+            Packet::BeginDataLogging => self.hals.hardware.begin_data_logging(),
+            Packet::EndDataLogging => self.hals.hardware.end_data_logging(),
+            Packet::Abort => self.abort(),
+            _ => {}
+        }
+
+        if !matches!(packet, Packet::Abort) {
+            self.igniter.on_packet(packet, &mut self.hals);
         }
     }
 

@@ -28,7 +28,7 @@ fn test_startup_state() {
 }
 
 #[test]
-fn on_receive_fire_packet() {
+fn fire_igniter_test() {
     let mut ecu_hardware = ECUHardwareMock::new();
     let mut comms = CommsMock::new();
     let mut ecu = Ecu::initialize(&mut ecu_hardware, &mut comms, 0);

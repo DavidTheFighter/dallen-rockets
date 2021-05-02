@@ -39,10 +39,14 @@ impl Igniter {
     }
 
     pub(crate) fn on_packet<'a>(&mut self, packet: &Packet, hals: &'a mut HALs) {
-        if let Packet::FireIgniter = packet {
-            if self.current_state_enum == IgniterState::Idle {
-                self.transition_state(IgniterState::Prefire, hals);
+        match packet {
+            Packet::FireIgniter => {
+                if self.current_state_enum == IgniterState::Idle {
+                    self.transition_state(IgniterState::Prefire, hals);
+                }
             }
+            Packet::ConfigureIgniterTiming(timing) => self.timing_config = timing.clone(),
+            _ => {}
         }
     }
 
