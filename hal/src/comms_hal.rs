@@ -42,6 +42,7 @@ pub enum Packet {
 
     // -- Telemtry -- //
     ECUTelemtry(ECUTelemtryData),
+    ControllerAborted(NetworkAddress),
 
     // -- Data transfer -- //
     TransferDataLogs,

@@ -15,7 +15,6 @@ pub enum IgniterState {
     Prefire,
     Firing,
     Purge,
-    Abort,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -48,6 +47,7 @@ pub trait ECUHardware {
     fn begin_data_logging(&mut self);
     fn end_data_logging(&mut self);
     fn get_next_recorded_data_frame(&mut self) -> Option<ECUDataFrame>;
+    fn get_data_collection_rate_hz(&self) -> u16;
 }
 
 #[derive(Debug, Clone)]
