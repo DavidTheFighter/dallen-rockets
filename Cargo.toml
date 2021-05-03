@@ -1,5 +1,6 @@
 [workspace]
 members = [
-    "hal",
+    "ctrl-view",
     "ecu",
+    "hal",
 ]
