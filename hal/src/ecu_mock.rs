@@ -75,7 +75,7 @@ impl ECUHardware for ECUHardwareMock {
         1000
     }
 
-    fn any(&self) -> &dyn Any {
-        self
+    fn any(&self) -> Option<&dyn Any> {
+        Some(self)
     }
 }

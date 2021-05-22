@@ -10,6 +10,7 @@ fn test_data_logging() {
     assert!(
         ecu.get_ecu_hardware()
             .any()
+            .unwrap()
             .downcast_ref::<ECUHardwareMock>()
             .unwrap()
             .logging_data
@@ -19,6 +20,7 @@ fn test_data_logging() {
     assert!(
         ecu.get_ecu_hardware()
             .any()
+            .unwrap()
             .downcast_ref::<ECUHardwareMock>()
             .unwrap()
             .logging_data
@@ -28,6 +30,7 @@ fn test_data_logging() {
     assert!(
         ecu.get_ecu_hardware()
             .any()
+            .unwrap()
             .downcast_ref::<ECUHardwareMock>()
             .unwrap()
             .logging_data
@@ -53,6 +56,7 @@ fn test_set_valve_packet() {
         for valve_state in &ecu
             .get_ecu_hardware()
             .any()
+            .unwrap()
             .downcast_ref::<ECUHardwareMock>()
             .unwrap()
             .valve_states
@@ -68,6 +72,7 @@ fn test_set_valve_packet() {
         for (index, valve_state) in ecu
             .get_ecu_hardware()
             .any()
+            .unwrap()
             .downcast_ref::<ECUHardwareMock>()
             .unwrap()
             .valve_states
@@ -89,6 +94,7 @@ fn test_set_valve_packet() {
         for valve_state in ecu
             .get_ecu_hardware()
             .any()
+            .unwrap()
             .downcast_ref::<ECUHardwareMock>()
             .unwrap()
             .valve_states

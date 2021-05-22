@@ -53,7 +53,7 @@ pub trait ECUHardware {
     fn get_next_recorded_data_frame(&mut self) -> Option<ECUDataFrame>;
     fn get_data_collection_rate_hz(&self) -> u16;
 
-    fn any(&self) -> &dyn Any;
+    fn any(&self) -> Option<&dyn Any>;
 }
 
 #[derive(Debug, Clone)]

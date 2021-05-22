@@ -32,9 +32,15 @@ pub trait CommsInterface {
 #[derive(Debug, Clone)]
 pub enum Packet {
     // -- Commands -- //
-    SetValve { valve: Valve, state: u8 },
+    SetValve {
+        valve: Valve,
+        state: u8,
+    },
     FireIgniter,
-    ConfigureSensor { sensor: Sensor, config: SensorConfig },
+    ConfigureSensor {
+        sensor: Sensor,
+        config: SensorConfig,
+    },
     ConfigureIgniterTiming(IgniterTimingConfig),
     BeginDataLogging,
     EndDataLogging,
