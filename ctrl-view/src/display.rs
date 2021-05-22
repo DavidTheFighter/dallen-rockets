@@ -35,7 +35,8 @@ impl ConsoleDisplay {
         self.clear_terminal();
         queue!(
             self.stdout,
-            style::Print("ctrl-view    - Press ESC to exit")
+            style::Print("ctrl-view".blue()),
+            style::Print(" - Press ESC to exit")
         )
         .unwrap();
         queue!(self.stdout, cursor::MoveToNextLine(2)).unwrap();

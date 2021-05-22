@@ -1,0 +1,21 @@
+[package]
+name = "stm32l412-ecu-ctrl"
+version = "0.1.0"
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+cortex-m = "0.7.2"
+cortex-m-rt = "0.6.13"
+cortex-m-semihosting = "0.3.3"
+serde = { version = "1.0.125", default-features = false, features = ["derive"] }
+
+[dependencies.stm32l4xx-hal]
+git = "https://github.com/DavidTheFighter/stm32l4xx-hal.git"
+version = "0.6.0"
+features = ["stm32l4x2"]
+
+[dependencies.hal]
+git = "https://github.com/DavidTheFighter/2021-engine.git"
+version = "0.1.0"

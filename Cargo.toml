@@ -4,3 +4,7 @@ members = [
     "ecu",
     "hal",
 ]
+
+exclude = [
+    "mcu/stm32l412-ecu-ctrl",
+]
