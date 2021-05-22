@@ -54,7 +54,7 @@ impl<'a> Ecu<'a> {
     pub fn on_packet(&mut self, packet: &Packet) {
         match packet {
             Packet::SetValve { valve, state } => self.hals.hardware.set_valve(*valve, *state),
-            Packet::ConfigureSensor(config) => self.hals.hardware.configure_sensor(config),
+            Packet::ConfigureSensor { sensor, config } => self.hals.hardware.configure_sensor(*sensor, config),
             Packet::BeginDataLogging => self.hals.hardware.begin_data_logging(),
             Packet::EndDataLogging => self.hals.hardware.end_data_logging(),
             Packet::Abort => self.abort(),

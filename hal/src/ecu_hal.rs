@@ -4,7 +4,6 @@ use crate::{MAX_SENSORS, MAX_VALVES};
 
 #[derive(Debug, Clone, Copy)]
 pub struct SensorConfig {
-    pub sensor: Sensor,
     pub premin: f32,
     pub premax: f32,
     pub postmin: f32,
@@ -48,7 +47,7 @@ pub trait ECUHardware {
     fn get_raw_sensor_readings(&self) -> &[u16];
     fn get_valve_states(&self) -> &[u8];
 
-    fn configure_sensor(&mut self, config: &SensorConfig);
+    fn configure_sensor(&mut self, sensor: Sensor, config: &SensorConfig);
     fn begin_data_logging(&mut self);
     fn end_data_logging(&mut self);
     fn get_next_recorded_data_frame(&mut self) -> Option<ECUDataFrame>;

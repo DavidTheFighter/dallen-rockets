@@ -20,7 +20,6 @@ impl ECUHardwareMock {
             valve_states: [0_u8; MAX_VALVES],
             sensor_readings: [0_u16; MAX_SENSORS],
             sensor_configs: [SensorConfig {
-                sensor: Sensor::IgniterThroatTemp,
                 premin: 0.0,
                 premax: 0.0,
                 postmin: 0.0,
@@ -56,8 +55,8 @@ impl ECUHardware for ECUHardwareMock {
         &self.valve_states
     }
 
-    fn configure_sensor(&mut self, config: &SensorConfig) {
-        self.sensor_configs[config.sensor as usize] = *config;
+    fn configure_sensor(&mut self, sensor: Sensor, config: &SensorConfig) {
+        self.sensor_configs[sensor as usize] = *config;
     }
 
     fn begin_data_logging(&mut self) {

@@ -1,4 +1,4 @@
-use crate::ecu_hal::{ECUDataFrame, IgniterTimingConfig, SensorConfig, Valve};
+use crate::ecu_hal::{ECUDataFrame, IgniterTimingConfig, Sensor, SensorConfig, Valve};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum NetworkAddress {
@@ -34,7 +34,7 @@ pub enum Packet {
     // -- Commands -- //
     SetValve { valve: Valve, state: u8 },
     FireIgniter,
-    ConfigureSensor(SensorConfig),
+    ConfigureSensor { sensor: Sensor, config: SensorConfig },
     ConfigureIgniterTiming(IgniterTimingConfig),
     BeginDataLogging,
     EndDataLogging,
