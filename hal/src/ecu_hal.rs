@@ -46,10 +46,6 @@ pub trait ECUHardware {
     fn get_valve_states(&self) -> &[u8];
 
     fn configure_sensor(&mut self, sensor: Sensor, config: &SensorConfig);
-    fn begin_data_logging(&mut self);
-    fn end_data_logging(&mut self);
-    fn get_next_recorded_data_frame(&mut self) -> Option<ECUDataFrame>;
-    fn get_data_collection_rate_hz(&self) -> u16;
 }
 
 #[derive(Debug, Clone)]

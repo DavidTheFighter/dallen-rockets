@@ -8,7 +8,6 @@ pub struct ECUHardwareMock {
     pub valve_states: [u8; MAX_VALVES],
     pub sensor_readings: [u16; MAX_SENSORS],
     pub sensor_configs: [SensorConfig; MAX_SENSORS],
-    pub logging_data: bool,
 }
 
 impl ECUHardwareMock {
@@ -23,7 +22,6 @@ impl ECUHardwareMock {
                 postmin: 0.0,
                 postmax: 0.0,
             }; MAX_SENSORS],
-            logging_data: false,
         }
     }
 }
@@ -55,21 +53,5 @@ impl ECUHardware for ECUHardwareMock {
 
     fn configure_sensor(&mut self, sensor: Sensor, config: &SensorConfig) {
         self.sensor_configs[sensor as usize] = *config;
-    }
-
-    fn begin_data_logging(&mut self) {
-        self.logging_data = true;
-    }
-
-    fn end_data_logging(&mut self) {
-        self.logging_data = false;
-    }
-
-    fn get_next_recorded_data_frame(&mut self) -> Option<ECUDataFrame> {
-        None
-    }
-
-    fn get_data_collection_rate_hz(&self) -> u16 {
-        1000
     }
 }
