@@ -16,6 +16,11 @@ git = "https://github.com/DavidTheFighter/stm32l4xx-hal.git"
 version = "0.6.0"
 features = ["stm32l4x2"]
 
+[dependencies.enc28j60]
+git = "https://github.com/sciguy16/enc28j60.git"
+
 [dependencies.hal]
-git = "https://github.com/DavidTheFighter/2021-engine.git"
-version = "0.1.0"
+path = "../../hal"
+
+[dependencies.ecu]
+path = "../../ecu"

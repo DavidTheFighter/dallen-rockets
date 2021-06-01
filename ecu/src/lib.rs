@@ -12,27 +12,21 @@ pub const DEFAULT_TELEMETRY_RATE: f32 = 0.01;
 
 pub mod igniter;
 
-pub(crate) struct HALs<'a> {
+pub struct HALs<'a> {
     pub hardware: &'a mut dyn ECUHardware,
     pub comms: &'a mut dyn CommsInterface,
 }
 
-pub struct Ecu<'a> {
-    hals: HALs<'a>,
+pub struct Ecu {
     igniter: Igniter,
     elapsed_since_last_telemetry: f32,
     enginer_controller_index: u8,
     telemetry_rate: f32,
 }
 
-impl<'a> Ecu<'a> {
-    pub fn initialize<'b>(
-        hardware: &'b mut dyn ECUHardware,
-        comms: &'b mut dyn CommsInterface,
-        enginer_controller_index: u8,
-    ) -> Ecu<'b> {
+impl Ecu {
+    pub fn new(enginer_controller_index: u8) -> Ecu {
         Ecu {
-            hals: HALs { hardware, comms },
             igniter: Igniter::new(),
             elapsed_since_last_telemetry: 0.0,
             enginer_controller_index,
@@ -40,58 +34,50 @@ impl<'a> Ecu<'a> {
         }
     }
 
-    pub fn update(&mut self, elapsed: f32) {
+    pub fn update(&mut self, hals: &mut HALs, elapsed: f32) {
         self.elapsed_since_last_telemetry += elapsed;
 
         if self.elapsed_since_last_telemetry > self.telemetry_rate {
-            self.transmit_telemetry();
+            self.transmit_telemetry(hals);
             self.elapsed_since_last_telemetry -= self.telemetry_rate;
         }
 
-        self.igniter.update(elapsed, &mut self.hals);
+        self.igniter.update(elapsed, hals);
     }
 
-    pub fn on_packet(&mut self, packet: &Packet) {
+    pub fn on_packet(&mut self, hals: &mut HALs, packet: &Packet) {
         match packet {
-            Packet::SetValve { valve, state } => self.hals.hardware.set_valve(*valve, *state),
+            Packet::SetValve { valve, state } => hals.hardware.set_valve(*valve, *state),
             Packet::ConfigureSensor { sensor, config } => {
-                self.hals.hardware.configure_sensor(*sensor, config)
+                hals.hardware.configure_sensor(*sensor, config)
             }
-            Packet::BeginDataLogging => self.hals.hardware.begin_data_logging(),
-            Packet::EndDataLogging => self.hals.hardware.end_data_logging(),
-            Packet::Abort => self.abort(),
+            Packet::BeginDataLogging => hals.hardware.begin_data_logging(),
+            Packet::EndDataLogging => hals.hardware.end_data_logging(),
+            Packet::Abort => self.abort(hals),
             _ => {}
         }
 
         if !matches!(packet, Packet::Abort) {
-            self.igniter.on_packet(packet, &mut self.hals);
+            self.igniter.on_packet(packet, hals);
         }
     }
 
-    pub fn abort(&mut self) {
+    pub fn abort(&mut self, hals: &mut HALs) {
+        self.igniter.on_abort(hals);
+
         let packet = Packet::ControllerAborted(NetworkAddress::EngineController(
             self.enginer_controller_index,
         ));
-        if let Err(_err) = self.hals.comms.transmit(&packet, NetworkAddress::Broadcast) {
+        if let Err(_err) = hals.comms.transmit(&packet, NetworkAddress::Broadcast) {
             //something
         }
-
-        self.igniter.abort(&mut self.hals);
     }
 
     pub fn get_igniter(&mut self) -> &mut Igniter {
         &mut self.igniter
     }
 
-    pub fn get_ecu_hardware(&mut self) -> &mut dyn ECUHardware {
-        self.hals.hardware
-    }
-
-    pub fn get_comms(&mut self) -> &mut dyn CommsInterface {
-        self.hals.comms
-    }
-
-    fn transmit_telemetry(&mut self) {
+    fn transmit_telemetry(&mut self, hals: &mut HALs) {
         let mut telem = ECUTelemtryData {
             ecu_data: ECUDataFrame {
                 time: 0.0,
@@ -101,14 +87,14 @@ impl<'a> Ecu<'a> {
             },
             avg_loop_time_ms: 0.0,
             max_loop_time_ms: 0.0,
-            data_collection_rate_hz: self.hals.hardware.get_data_collection_rate_hz(),
+            data_collection_rate_hz: hals.hardware.get_data_collection_rate_hz(),
         };
 
         for (telem_valve, valve_state) in telem
             .ecu_data
             .valve_states
             .iter_mut()
-            .zip(self.hals.hardware.get_valve_states().iter())
+            .zip(hals.hardware.get_valve_states().iter())
         {
             *telem_valve = *valve_state;
         }
@@ -117,13 +103,12 @@ impl<'a> Ecu<'a> {
             .ecu_data
             .sensor_states
             .iter_mut()
-            .zip(self.hals.hardware.get_raw_sensor_readings().iter())
+            .zip(hals.hardware.get_raw_sensor_readings().iter())
         {
             *telem_sensor = *sensor;
         }
 
-        if let Err(_err) = self
-            .hals
+        if let Err(_err) = hals
             .comms
             .transmit(&Packet::ECUTelemtry(telem), NetworkAddress::MissionControl)
         {

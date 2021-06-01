@@ -1,5 +1,3 @@
-use core::any::Any;
-
 use crate::{MAX_SENSORS, MAX_VALVES};
 
 #[derive(Debug, Clone, Copy)]
@@ -52,8 +50,6 @@ pub trait ECUHardware {
     fn end_data_logging(&mut self);
     fn get_next_recorded_data_frame(&mut self) -> Option<ECUDataFrame>;
     fn get_data_collection_rate_hz(&self) -> u16;
-
-    fn any(&self) -> Option<&dyn Any>;
 }
 
 #[derive(Debug, Clone)]

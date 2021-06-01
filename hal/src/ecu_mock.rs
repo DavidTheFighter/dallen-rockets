@@ -1,5 +1,3 @@
-use core::any::Any;
-
 use crate::{
     ecu_hal::{ECUDataFrame, ECUHardware, Sensor, SensorConfig, Valve},
     MAX_SENSORS, MAX_VALVES,
@@ -73,9 +71,5 @@ impl ECUHardware for ECUHardwareMock {
 
     fn get_data_collection_rate_hz(&self) -> u16 {
         1000
-    }
-
-    fn any(&self) -> Option<&dyn Any> {
-        Some(self)
     }
 }

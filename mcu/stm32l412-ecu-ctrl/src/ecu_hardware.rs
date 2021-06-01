@@ -1,5 +1,3 @@
-use core::any::Any;
-
 use hal::ecu_hal::{ECUDataFrame, ECUHardware, Sensor, SensorConfig, Valve};
 
 use crate::STM32L412ECUController;
@@ -61,9 +59,5 @@ impl<'a> ECUHardware for STM32L412ECUController<'a> {
 
     fn get_data_collection_rate_hz(&self) -> u16 {
         todo!()
-    }
-
-    fn any(&self) -> Option<&dyn Any> {
-        None
     }
 }

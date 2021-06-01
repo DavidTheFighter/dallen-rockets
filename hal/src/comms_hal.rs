@@ -46,7 +46,7 @@ pub enum Packet {
     EndDataLogging,
     Abort,
 
-    // -- Telemtry -- //
+    // -- Telemetry -- //
     ECUTelemtry(ECUTelemtryData),
     ControllerAborted(NetworkAddress),
 

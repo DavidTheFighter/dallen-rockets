@@ -7,4 +7,5 @@ members = [
 
 exclude = [
     "mcu/stm32l412-ecu-ctrl",
+    "mcu/stm32l412-ecu-daq",
 ]

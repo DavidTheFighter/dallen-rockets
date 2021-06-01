@@ -50,7 +50,7 @@ impl Igniter {
         }
     }
 
-    pub(crate) fn abort<'a>(&mut self, hals: &'a mut HALs) {
+    pub(crate) fn on_abort<'a>(&mut self, hals: &'a mut HALs) {
         self.transition_state(IgniterState::Idle, hals);
     }
 
