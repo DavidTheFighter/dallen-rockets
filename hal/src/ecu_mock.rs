@@ -1,5 +1,5 @@
 use crate::{
-    ecu_hal::{ECUDataFrame, ECUHardware, Sensor, SensorConfig, Valve},
+    ecu_hal::{ECUHardware, Sensor, SensorConfig, Valve},
     MAX_SENSORS, MAX_VALVES,
 };
 

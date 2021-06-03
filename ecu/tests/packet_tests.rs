@@ -11,19 +11,6 @@ macro_rules! hals {
 }
 
 #[test]
-fn test_data_logging() {
-    let mut ecu_hardware = ECUHardwareMock::new();
-    let mut comms = CommsMock::new();
-    let mut ecu = Ecu::new(0);
-
-    assert!(ecu_hardware.logging_data == false);
-    ecu.on_packet(hals!(ecu_hardware, comms), &Packet::BeginDataLogging);
-    assert!(ecu_hardware.logging_data == true);
-    ecu.on_packet(hals!(ecu_hardware, comms), &Packet::EndDataLogging);
-    assert!(ecu_hardware.logging_data == false);
-}
-
-#[test]
 fn test_set_valve_packet() {
     let mut ecu_hardware = ECUHardwareMock::new();
     let mut comms = CommsMock::new();

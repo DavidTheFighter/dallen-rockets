@@ -42,8 +42,6 @@ pub enum Packet {
         config: SensorConfig,
     },
     ConfigureIgniterTiming(IgniterTimingConfig),
-    BeginDataLogging,
-    EndDataLogging,
     Abort,
 
     // -- Telemetry -- //
@@ -60,5 +58,4 @@ pub struct ECUTelemtryData {
     pub ecu_data: ECUDataFrame,
     pub avg_loop_time_ms: f32,
     pub max_loop_time_ms: f32,
-    pub data_collection_rate_hz: u16,
 }

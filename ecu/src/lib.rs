@@ -51,8 +51,6 @@ impl Ecu {
             Packet::ConfigureSensor { sensor, config } => {
                 hals.hardware.configure_sensor(*sensor, config)
             }
-            Packet::BeginDataLogging => hals.hardware.begin_data_logging(),
-            Packet::EndDataLogging => hals.hardware.end_data_logging(),
             Packet::Abort => self.abort(hals),
             _ => {}
         }
@@ -87,7 +85,6 @@ impl Ecu {
             },
             avg_loop_time_ms: 0.0,
             max_loop_time_ms: 0.0,
-            data_collection_rate_hz: hals.hardware.get_data_collection_rate_hz(),
         };
 
         for (telem_valve, valve_state) in telem
