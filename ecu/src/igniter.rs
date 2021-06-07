@@ -1,7 +1,8 @@
 use crate::HALs;
 use hal::{
     comms_hal::Packet,
-    ecu_hal::{IgniterState, IgniterTimingConfig, Valve},
+    ecu_hal::{IgniterState, IgniterTimingConfig},
+    Valve,
 };
 
 pub const DEFAULT_IGNITER_PREFIRE_DURATION_MS: u16 = 250;

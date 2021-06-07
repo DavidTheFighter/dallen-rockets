@@ -7,10 +7,8 @@ use ecu::{
 };
 
 use hal::{
-    comms_hal::Packet,
-    comms_mock::CommsMock,
-    ecu_hal::{IgniterState, Valve},
-    ecu_mock::ECUHardwareMock,
+    comms_hal::Packet, comms_mock::CommsMock, ecu_hal::IgniterState, ecu_mock::ECUHardwareMock,
+    Valve,
 };
 
 macro_rules! hals {

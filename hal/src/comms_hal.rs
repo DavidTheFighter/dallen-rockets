@@ -1,4 +1,9 @@
-use crate::ecu_hal::{ECUDataFrame, IgniterTimingConfig, Sensor, SensorConfig, Valve};
+use crate::{
+    ecu_hal::{ECUDataFrame, IgniterTimingConfig},
+    Sensor, SensorConfig, Valve,
+};
+
+pub const MAX_SERIALIZE_LENGTH: usize = 64;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum NetworkAddress {

@@ -5,6 +5,7 @@
 //! - this module
 //! - the `log` dependency in Cargo.toml
 
+use bsp::usb::Poller;
 use core::cell::RefCell;
 use cortex_m::interrupt::Mutex;
 
@@ -39,7 +40,7 @@ pub fn init() -> Result<bsp::usb::Reader, bsp::usb::Error> {
         inst,
         bsp::usb::LoggingConfig {
             filters: FILTERS,
-            ..Default::default()
+            ..bsp::usb::LoggingConfig::default()
         },
     )
     .map(|(poller, reader)| {
@@ -55,11 +56,7 @@ fn setup(poller: bsp::usb::Poller) {
     #[cortex_m_rt::interrupt]
     fn USB_OTG1() {
         cortex_m::interrupt::free(|cs| {
-            POLLER
-                .borrow(cs)
-                .borrow_mut()
-                .as_mut()
-                .map(|poller| poller.poll());
+            POLLER.borrow(cs).borrow_mut().as_mut().map(Poller::poll);
         });
     }
 

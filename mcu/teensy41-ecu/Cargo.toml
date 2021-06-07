@@ -18,6 +18,12 @@ teensy4-panic = "0.2.0"
 version = "0.2"
 features = ["rt"]
 
+[dependencies.hal]
+path = "../../hal"
+
+[dependencies.ecu]
+path = "../../ecu"
+
 # Don't optimize build dependencies, like proc macros.
 # Helps with build times.
 [profile.release.build-override]

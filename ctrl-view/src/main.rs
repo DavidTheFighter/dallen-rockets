@@ -2,7 +2,7 @@ use std::io::stdout;
 
 use crossterm::event::{self, Event, KeyCode, KeyEvent};
 use display::ConsoleDisplay;
-use hal::ecu_hal::Sensor;
+use hal::Sensor;
 
 pub mod display;
 

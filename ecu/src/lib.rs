@@ -82,6 +82,7 @@ impl Ecu {
                 igniter_state: self.igniter.get_current_state(),
                 valve_states: [0_u8; MAX_VALVES],
                 sensor_states: [0_u16; MAX_SENSORS],
+                sparking: hals.hardware.get_sparking(),
             },
             avg_loop_time_ms: 0.0,
             max_loop_time_ms: 0.0,

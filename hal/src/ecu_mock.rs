@@ -1,7 +1,4 @@
-use crate::{
-    ecu_hal::{ECUHardware, Sensor, SensorConfig, Valve},
-    MAX_SENSORS, MAX_VALVES,
-};
+use crate::{ecu_hal::ECUHardware, Sensor, SensorConfig, Valve, MAX_SENSORS, MAX_VALVES};
 
 pub struct ECUHardwareMock {
     pub sparking: bool,
@@ -49,6 +46,10 @@ impl ECUHardware for ECUHardwareMock {
 
     fn get_valve_states(&self) -> &[u8] {
         &self.valve_states
+    }
+
+    fn get_sparking(&self) -> bool {
+        self.sparking
     }
 
     fn configure_sensor(&mut self, sensor: Sensor, config: &SensorConfig) {

@@ -1,5 +1,5 @@
 use ecu::{Ecu, HALs};
-use hal::{comms_hal::Packet, comms_mock::CommsMock, ecu_hal::Valve, ecu_mock::ECUHardwareMock};
+use hal::{comms_hal::Packet, comms_mock::CommsMock, ecu_mock::ECUHardwareMock, Valve};
 
 macro_rules! hals {
     ($hardware:ident, $comms:ident) => {

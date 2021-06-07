@@ -1,12 +1,14 @@
-use crate::{MAX_SENSORS, MAX_VALVES};
+use crate::{Sensor, SensorConfig, Valve, MAX_SENSORS, MAX_VALVES};
 
-#[derive(Debug, Clone, Copy)]
-pub struct SensorConfig {
-    pub premin: f32,
-    pub premax: f32,
-    pub postmin: f32,
-    pub postmax: f32,
-}
+pub const MAX_ECU_SENSORS: usize = 5;
+
+pub const ECU_SENSORS: [Sensor; MAX_ECU_SENSORS] = [
+    Sensor::IgniterThroatTemp,
+    Sensor::IgniterFuelInjectorPressure,
+    Sensor::IgniterGOxInjectorPressure,
+    Sensor::IgniterChamberPressure,
+    Sensor::FuelTankPressure,
+];
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum IgniterState {
@@ -14,24 +16,6 @@ pub enum IgniterState {
     Prefire,
     Firing,
     Purge,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Valve {
-    FuelPress = 0,
-    FuelVent = 1,
-    IgniterFuelMain = 2,
-    IgniterGOxMain = 3,
-    IgniterFuelPurge = 4,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Sensor {
-    IgniterThroatTemp = 0,
-    IgniterFuelInjectorPressure = 1,
-    IgniterGOxInjectorPressure = 2,
-    IgniterChamberPressure = 3,
-    FuelTankPressure = 4,
 }
 
 pub trait ECUHardware {
@@ -44,6 +28,7 @@ pub trait ECUHardware {
     fn get_sensor_value(&self, sensor: Sensor) -> f32;
     fn get_raw_sensor_readings(&self) -> &[u16];
     fn get_valve_states(&self) -> &[u8];
+    fn get_sparking(&self) -> bool;
 
     fn configure_sensor(&mut self, sensor: Sensor, config: &SensorConfig);
 }
@@ -54,6 +39,7 @@ pub struct ECUDataFrame {
     pub igniter_state: IgniterState,
     pub valve_states: [u8; MAX_VALVES],
     pub sensor_states: [u16; MAX_SENSORS],
+    pub sparking: bool,
 }
 
 #[derive(Debug, Clone)]
