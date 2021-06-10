@@ -7,8 +7,10 @@ use ecu::{
 };
 
 use hal::{
-    comms_hal::Packet, comms_mock::CommsMock, ecu_hal::IgniterState, ecu_mock::ECUHardwareMock,
-    Valve,
+    comms_hal::Packet,
+    comms_mock::CommsMock,
+    ecu_hal::{ECUValve, IgniterState},
+    ecu_mock::ECUHardwareMock,
 };
 
 macro_rules! hals {
@@ -76,32 +78,32 @@ fn fire_igniter_test() {
 
 fn assert_idle_state(ecu: &mut Ecu, ecu_hardware: &mut ECUHardwareMock) {
     assert!(ecu.get_igniter().get_current_state() == IgniterState::Idle);
-    assert!(ecu_hardware.valve_states[Valve::IgniterFuelMain as usize] == 0);
-    assert!(ecu_hardware.valve_states[Valve::IgniterGOxMain as usize] == 0);
-    assert!(ecu_hardware.valve_states[Valve::IgniterFuelPurge as usize] == 0);
+    assert!(ecu_hardware.valve_states[ECUValve::IgniterFuelMain as usize] == 0);
+    assert!(ecu_hardware.valve_states[ECUValve::IgniterGOxMain as usize] == 0);
+    assert!(ecu_hardware.valve_states[ECUValve::IgniterFuelPurge as usize] == 0);
     assert!(ecu_hardware.sparking == false);
 }
 
 fn assert_prefire_state(ecu: &mut Ecu, ecu_hardware: &mut ECUHardwareMock) {
     assert!(ecu.get_igniter().get_current_state() == IgniterState::Prefire);
-    assert!(ecu_hardware.valve_states[Valve::IgniterFuelMain as usize] == 0);
-    assert!(ecu_hardware.valve_states[Valve::IgniterGOxMain as usize] > 0);
-    assert!(ecu_hardware.valve_states[Valve::IgniterFuelPurge as usize] == 0);
+    assert!(ecu_hardware.valve_states[ECUValve::IgniterFuelMain as usize] == 0);
+    assert!(ecu_hardware.valve_states[ECUValve::IgniterGOxMain as usize] > 0);
+    assert!(ecu_hardware.valve_states[ECUValve::IgniterFuelPurge as usize] == 0);
     assert!(ecu_hardware.sparking == true);
 }
 
 fn assert_firing_state(ecu: &mut Ecu, ecu_hardware: &mut ECUHardwareMock) {
     assert!(ecu.get_igniter().get_current_state() == IgniterState::Firing);
-    assert!(ecu_hardware.valve_states[Valve::IgniterFuelMain as usize] > 0);
-    assert!(ecu_hardware.valve_states[Valve::IgniterGOxMain as usize] > 0);
-    assert!(ecu_hardware.valve_states[Valve::IgniterFuelPurge as usize] == 0);
+    assert!(ecu_hardware.valve_states[ECUValve::IgniterFuelMain as usize] > 0);
+    assert!(ecu_hardware.valve_states[ECUValve::IgniterGOxMain as usize] > 0);
+    assert!(ecu_hardware.valve_states[ECUValve::IgniterFuelPurge as usize] == 0);
     assert!(ecu_hardware.sparking == true);
 }
 
 fn assert_purging_state(ecu: &mut Ecu, ecu_hardware: &mut ECUHardwareMock) {
     assert!(ecu.get_igniter().get_current_state() == IgniterState::Purge);
-    assert!(ecu_hardware.valve_states[Valve::IgniterFuelMain as usize] == 0);
-    assert!(ecu_hardware.valve_states[Valve::IgniterGOxMain as usize] > 0);
-    assert!(ecu_hardware.valve_states[Valve::IgniterFuelPurge as usize] > 0);
+    assert!(ecu_hardware.valve_states[ECUValve::IgniterFuelMain as usize] == 0);
+    assert!(ecu_hardware.valve_states[ECUValve::IgniterGOxMain as usize] > 0);
+    assert!(ecu_hardware.valve_states[ECUValve::IgniterFuelPurge as usize] > 0);
     assert!(ecu_hardware.sparking == false);
 }

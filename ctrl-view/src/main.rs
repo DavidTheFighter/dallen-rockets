@@ -2,7 +2,7 @@ use std::io::stdout;
 
 use crossterm::event::{self, Event, KeyCode, KeyEvent};
 use display::ConsoleDisplay;
-use hal::Sensor;
+use hal::ecu_hal::ECUSensor;
 
 pub mod display;
 
@@ -13,11 +13,15 @@ fn main() {
     display.set_watchdog("TCU", false);
 
     let sensors = [
-        (Sensor::IgniterThroatTemp, "IGN Throat", "\u{b0}C"),
-        (Sensor::IgniterFuelInjectorPressure, "IGN Fuel-Inj", "psi"),
-        (Sensor::IgniterGOxInjectorPressure, "IGN GOx-Inj", "psi"),
-        (Sensor::IgniterChamberPressure, "IGN Chamber", "psi"),
-        (Sensor::FuelTankPressure, "Fuel Tank", "psi"),
+        (ECUSensor::IgniterThroatTemp, "IGN Throat", "\u{b0}C"),
+        (
+            ECUSensor::IgniterFuelInjectorPressure,
+            "IGN Fuel-Inj",
+            "psi",
+        ),
+        (ECUSensor::IgniterGOxInjectorPressure, "IGN GOx-Inj", "psi"),
+        (ECUSensor::IgniterChamberPressure, "IGN Chamber", "psi"),
+        (ECUSensor::FuelTankPressure, "Fuel Tank", "psi"),
     ];
 
     for (_sensor, name, units) in &sensors {

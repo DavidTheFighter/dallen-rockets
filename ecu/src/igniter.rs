@@ -1,8 +1,7 @@
 use crate::HALs;
 use hal::{
     comms_hal::Packet,
-    ecu_hal::{IgniterState, IgniterTimingConfig},
-    Valve,
+    ecu_hal::{ECUValve, IgniterState, IgniterTimingConfig},
 };
 
 pub const DEFAULT_IGNITER_PREFIRE_DURATION_MS: u16 = 250;
@@ -76,9 +75,9 @@ impl Igniter {
     #[allow(clippy::unused_self)]
     fn enter_idle_state(&mut self, hals: &mut HALs) {
         hals.hardware.set_sparking(false);
-        hals.hardware.set_valve(Valve::IgniterFuelMain, 0);
-        hals.hardware.set_valve(Valve::IgniterGOxMain, 0);
-        hals.hardware.set_valve(Valve::IgniterFuelPurge, 0);
+        hals.hardware.set_valve(ECUValve::IgniterFuelMain, 0);
+        hals.hardware.set_valve(ECUValve::IgniterGOxMain, 0);
+        hals.hardware.set_valve(ECUValve::IgniterFuelPurge, 0);
     }
 
     // ----- Prefire State ----- //
@@ -86,9 +85,9 @@ impl Igniter {
     #[allow(clippy::unused_self)]
     fn enter_prefire_state(&mut self, hals: &mut HALs) {
         hals.hardware.set_sparking(true);
-        hals.hardware.set_valve(Valve::IgniterFuelMain, 0);
-        hals.hardware.set_valve(Valve::IgniterGOxMain, 255);
-        hals.hardware.set_valve(Valve::IgniterFuelPurge, 0);
+        hals.hardware.set_valve(ECUValve::IgniterFuelMain, 0);
+        hals.hardware.set_valve(ECUValve::IgniterGOxMain, 255);
+        hals.hardware.set_valve(ECUValve::IgniterFuelPurge, 0);
     }
 
     fn update_prefire_state(&mut self, hals: &mut HALs) {
@@ -104,9 +103,9 @@ impl Igniter {
     #[allow(clippy::unused_self)]
     fn enter_firing_state(&mut self, hals: &mut HALs) {
         hals.hardware.set_sparking(true);
-        hals.hardware.set_valve(Valve::IgniterFuelMain, 255);
-        hals.hardware.set_valve(Valve::IgniterGOxMain, 255);
-        hals.hardware.set_valve(Valve::IgniterFuelPurge, 0);
+        hals.hardware.set_valve(ECUValve::IgniterFuelMain, 255);
+        hals.hardware.set_valve(ECUValve::IgniterGOxMain, 255);
+        hals.hardware.set_valve(ECUValve::IgniterFuelPurge, 0);
     }
 
     fn update_firing_state(&mut self, hals: &mut HALs) {
@@ -122,9 +121,9 @@ impl Igniter {
     #[allow(clippy::unused_self)]
     fn enter_purging_state(&mut self, hals: &mut HALs) {
         hals.hardware.set_sparking(false);
-        hals.hardware.set_valve(Valve::IgniterFuelMain, 0);
-        hals.hardware.set_valve(Valve::IgniterGOxMain, 255);
-        hals.hardware.set_valve(Valve::IgniterFuelPurge, 255);
+        hals.hardware.set_valve(ECUValve::IgniterFuelMain, 0);
+        hals.hardware.set_valve(ECUValve::IgniterGOxMain, 255);
+        hals.hardware.set_valve(ECUValve::IgniterFuelPurge, 255);
     }
 
     fn update_purging_state(&mut self, hals: &mut HALs) {

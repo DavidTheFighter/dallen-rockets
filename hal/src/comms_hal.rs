@@ -1,6 +1,6 @@
 use crate::{
-    ecu_hal::{ECUDataFrame, IgniterTimingConfig},
-    Sensor, SensorConfig, Valve,
+    ecu_hal::{ECUDataFrame, ECUSensor, ECUValve, IgniterTimingConfig},
+    SensorConfig,
 };
 
 pub const MAX_SERIALIZE_LENGTH: usize = 64;
@@ -38,12 +38,12 @@ pub trait CommsInterface {
 pub enum Packet {
     // -- Commands -- //
     SetValve {
-        valve: Valve,
+        valve: ECUValve,
         state: u8,
     },
     FireIgniter,
     ConfigureSensor {
-        sensor: Sensor,
+        sensor: ECUSensor,
         config: SensorConfig,
     },
     ConfigureIgniterTiming(IgniterTimingConfig),

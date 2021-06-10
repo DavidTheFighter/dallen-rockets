@@ -1,5 +1,5 @@
 use ecu::{Ecu, HALs};
-use hal::{comms_hal::Packet, comms_mock::CommsMock, ecu_mock::ECUHardwareMock, Valve};
+use hal::{comms_hal::Packet, comms_mock::CommsMock, ecu_hal::ECUValve, ecu_mock::ECUHardwareMock};
 
 macro_rules! hals {
     ($hardware:ident, $comms:ident) => {
@@ -17,11 +17,11 @@ fn test_set_valve_packet() {
     let mut ecu = Ecu::new(0);
 
     let valves = [
-        Valve::FuelPress,
-        Valve::FuelVent,
-        Valve::IgniterFuelMain,
-        Valve::IgniterGOxMain,
-        Valve::IgniterFuelPurge,
+        ECUValve::FuelPress,
+        ECUValve::FuelVent,
+        ECUValve::IgniterFuelMain,
+        ECUValve::IgniterGOxMain,
+        ECUValve::IgniterFuelPurge,
     ];
 
     for valve in valves.iter() {

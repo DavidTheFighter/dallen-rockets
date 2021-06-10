@@ -3,8 +3,7 @@
 
 use hal::{
     comms_hal::{CommsInterface, ECUTelemtryData, NetworkAddress, Packet},
-    ecu_hal::{ECUDataFrame, ECUHardware},
-    MAX_SENSORS, MAX_VALVES,
+    ecu_hal::{ECUDataFrame, ECUHardware, MAX_ECU_SENSORS, MAX_ECU_VALVES},
 };
 use igniter::Igniter;
 
@@ -80,8 +79,8 @@ impl Ecu {
             ecu_data: ECUDataFrame {
                 time: 0.0,
                 igniter_state: self.igniter.get_current_state(),
-                valve_states: [0_u8; MAX_VALVES],
-                sensor_states: [0_u16; MAX_SENSORS],
+                valve_states: [0_u8; MAX_ECU_VALVES],
+                sensor_states: [0_u16; MAX_ECU_SENSORS],
                 sparking: hals.hardware.get_sparking(),
             },
             avg_loop_time_ms: 0.0,
