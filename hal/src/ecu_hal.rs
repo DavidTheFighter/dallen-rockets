@@ -1,9 +1,11 @@
+use serde::{Deserialize, Serialize};
+
 use crate::SensorConfig;
 
 pub const MAX_ECU_SENSORS: usize = 5;
 pub const MAX_ECU_VALVES: usize = 5;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum ECUSensor {
     IgniterThroatTemp = 0,
     IgniterFuelInjectorPressure = 1,
@@ -12,7 +14,7 @@ pub enum ECUSensor {
     FuelTankPressure = 4,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum ECUValve {
     IgniterFuelMain = 0,
     IgniterGOxMain = 1,
@@ -37,7 +39,7 @@ pub const ECU_VALVES: [ECUValve; MAX_ECU_VALVES] = [
     ECUValve::FuelVent,
 ];
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum IgniterState {
     Idle,
     Prefire,
@@ -60,7 +62,7 @@ pub trait ECUHardware {
     fn configure_sensor(&mut self, sensor: ECUSensor, config: &SensorConfig);
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ECUDataFrame {
     pub time: f32,
     pub igniter_state: IgniterState,
@@ -69,7 +71,7 @@ pub struct ECUDataFrame {
     pub sparking: bool,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct IgniterTimingConfig {
     pub prefire_duration_ms: u16,
     pub fire_duration_ms: u16,

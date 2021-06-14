@@ -1,11 +1,19 @@
+pub mod comms_canfd_hal;
+
+use postcard::{
+    flavors::{Cobs, Slice},
+    from_bytes_cobs, serialize_with_flavor, Error,
+};
+use serde::{Deserialize, Serialize};
+
 use crate::{
     ecu_hal::{ECUDataFrame, ECUSensor, ECUValve, IgniterTimingConfig},
     SensorConfig,
 };
 
-pub const MAX_SERIALIZE_LENGTH: usize = 64;
+pub const MAX_SERIALIZE_LENGTH: usize = 60;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum NetworkAddress {
     Broadcast,
     EngineController(u8),
@@ -20,6 +28,10 @@ pub enum TransferError {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum SerializationError {
     Unknown,
+    PacketTooLong,
+    PostcardImplementation,
+    SerdeError,
+    Corrupted,
 }
 
 pub trait CommsInterface {
@@ -34,7 +46,7 @@ pub trait CommsInterface {
     fn receive(&mut self) -> Option<Packet>;
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum Packet {
     // -- Commands -- //
     SetValve {
@@ -58,7 +70,59 @@ pub enum Packet {
     ECUDataFrame(ECUDataFrame),
 }
 
-#[derive(Debug, Clone)]
+impl Packet {
+    pub fn serialize(
+        &self,
+        buffer: &mut [u8; MAX_SERIALIZE_LENGTH],
+    ) -> Result<usize, SerializationError> {
+        match Cobs::try_new(Slice::new(buffer)) {
+            Ok(flavor) => {
+                let serialized =
+                    serialize_with_flavor::<Packet, Cobs<Slice>, &mut [u8]>(&self, flavor);
+
+                match serialized {
+                    Ok(output_buffer) => Ok(output_buffer.len()),
+                    Err(err) => match err {
+                        Error::WontImplement | Error::NotYetImplemented => {
+                            Err(SerializationError::PostcardImplementation)
+                        }
+                        Error::SerializeBufferFull | Error::SerializeSeqLengthUnknown => {
+                            Err(SerializationError::PacketTooLong)
+                        }
+                        Error::SerdeSerCustom | Error::SerdeDeCustom => {
+                            Err(SerializationError::SerdeError)
+                        }
+                        _ => Err(SerializationError::Unknown),
+                    },
+                }
+            }
+            Err(_err) => Err(SerializationError::Unknown),
+        }
+    }
+
+    pub fn deserialize(buffer: &mut [u8]) -> Result<Packet, SerializationError> {
+        match from_bytes_cobs(buffer) {
+            Ok(packet) => Ok(packet),
+            Err(err) => match err {
+                Error::WontImplement | Error::NotYetImplemented => {
+                    Err(SerializationError::PostcardImplementation)
+                }
+                Error::SerdeSerCustom | Error::SerdeDeCustom => Err(SerializationError::SerdeError),
+                Error::DeserializeUnexpectedEnd
+                | Error::DeserializeBadVarint
+                | Error::DeserializeBadBool
+                | Error::DeserializeBadChar
+                | Error::DeserializeBadUtf8
+                | Error::DeserializeBadOption
+                | Error::DeserializeBadEnum
+                | Error::DeserializeBadEncoding => Err(SerializationError::Corrupted),
+                _ => Err(SerializationError::Unknown),
+            },
+        }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ECUTelemtryData {
     pub ecu_data: ECUDataFrame,
     pub avg_loop_time_ms: f32,

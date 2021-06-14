@@ -54,7 +54,7 @@ fn main() -> ! {
         adc1,
     );
 
-    let mut teensy41_comms = Teensy41ECUComms::new();
+    let mut teensy41_comms = Teensy41ECUComms::new(0);
 
     let mut ecu = Ecu::new(0);
 

@@ -10,7 +10,6 @@ edition = "2018"
 cortex-m = "0.6.2"
 cortex-m-rt = "0.6.13"
 embedded-hal = "0.2.3"
-# Remove me if you don't want logging
 log = "0.4.11"
 teensy4-panic = "0.2.0"
 
@@ -23,6 +22,9 @@ path = "../../hal"
 
 [dependencies.ecu]
 path = "../../ecu"
+
+[dependencies.teensy4-canfd]
+git = "https://github.com/DavidTheFighter/teensy4-canfd.git"
 
 # Don't optimize build dependencies, like proc macros.
 # Helps with build times.
