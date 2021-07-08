@@ -1,4 +1,15 @@
-use super::{NetworkAddress, MAX_SERIALIZE_LENGTH};
+use super::{NetworkAddress, Packet, SerializationError, TransferError, MAX_SERIALIZE_LENGTH};
+use serde::{Deserialize, Serialize};
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub enum CANFDTransferError {
+    MetadataSerialization,
+    FrameTooBigForRegion,
+    Unknown,
+}
+
+pub struct LengthTooLongError;
+pub struct LengthTooShortError;
 
 impl NetworkAddress {
     pub fn to_standard_id(self) -> u32 {
@@ -24,7 +35,38 @@ impl NetworkAddress {
     }
 }
 
-pub struct LengthTooLongError;
+pub fn serialize_packet(
+    packet: &Packet,
+    buffer: &mut [u8; MAX_SERIALIZE_LENGTH + 4],
+) -> Result<usize, TransferError> {
+    match packet.serialize(&mut buffer[4..]) {
+        Ok(len) => {
+            let mut metadata = CANFDPacketMetadata::new();
+            if metadata.set_true_data_length(len).is_err() {
+                return Err(TransferError::Serialization(
+                    SerializationError::PacketTooLong,
+                ));
+            }
+
+            if metadata.serialize_to_buffer(&mut buffer[0..4]).is_err() {
+                return Err(TransferError::CANFDError(
+                    CANFDTransferError::MetadataSerialization,
+                ));
+            }
+
+            Ok(len)
+        }
+        Err(err) => Err(TransferError::Serialization(err)),
+    }
+}
+
+pub fn deserialize_packet(
+    buffer: &mut [u8; MAX_SERIALIZE_LENGTH + 4],
+) -> Result<Packet, SerializationError> {
+    let metadata = CANFDPacketMetadata::from_byte_slice(buffer);
+
+    Packet::deserialize(&mut buffer[4..(metadata.get_true_data_length() + 4)])
+}
 
 pub struct CANFDPacketMetadata {
     /// Bitfield mapping:
@@ -34,8 +76,17 @@ pub struct CANFDPacketMetadata {
 }
 
 impl CANFDPacketMetadata {
-    pub fn new(bitfield: u32) -> CANFDPacketMetadata {
-        CANFDPacketMetadata { bitfield }
+    pub fn new() -> CANFDPacketMetadata {
+        CANFDPacketMetadata { bitfield: 0 }
+    }
+
+    pub fn from_byte_slice(buffer: &[u8]) -> CANFDPacketMetadata {
+        let mut inst = Self { bitfield: 0 };
+        for (index, byte) in buffer.iter().enumerate().take(4) {
+            inst.bitfield |= u32::from(*byte) << (8 * usize_to_u32(index));
+        }
+
+        inst
     }
 
     pub fn get_bitfield(&self) -> u32 {
@@ -57,6 +108,19 @@ impl CANFDPacketMetadata {
         ((self.bitfield & MetadatBitfieldField::TrueDataLength.mask())
             >> MetadatBitfieldField::TrueDataLength.shift()) as usize
     }
+
+    pub fn serialize_to_buffer(&self, buffer: &mut [u8]) -> Result<(), LengthTooShortError> {
+        if buffer.len() < 4 {
+            Err(LengthTooShortError {})
+        } else {
+            let bytes = self.bitfield.to_le_bytes();
+            for (to, from) in buffer.iter_mut().zip(bytes.iter()) {
+                *to = *from;
+            }
+
+            Ok(())
+        }
+    }
 }
 
 enum MetadatBitfieldField {
@@ -64,13 +128,13 @@ enum MetadatBitfieldField {
 }
 
 impl MetadatBitfieldField {
-    pub fn mask(&self) -> u32 {
+    fn mask(&self) -> u32 {
         match self {
-            MetadatBitfieldField::TrueDataLength => 0x1F,
+            MetadatBitfieldField::TrueDataLength => 0x3F,
         }
     }
 
-    pub fn shift(&self) -> u32 {
+    fn shift(&self) -> u32 {
         match self {
             MetadatBitfieldField::TrueDataLength => 0,
         }

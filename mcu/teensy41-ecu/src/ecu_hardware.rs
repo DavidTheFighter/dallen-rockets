@@ -1,16 +1,6 @@
 use embedded_hal::adc::OneShot;
-use hal::{
-    ecu_hal::{ECUHardware, ECUSensor, ECUValve, ECU_SENSORS, MAX_ECU_SENSORS, MAX_ECU_VALVES},
-    SensorConfig,
-};
-use teensy4_bsp::{
-    hal::{
-        adc::{AnalogInput, ADC},
-        gpio::{Output, GPIO},
-        iomuxc::adc::ADC1,
-    },
-    t41,
-};
+use hal::{SensorConfig, ecu_hal::{ECUHardware, ECUSensor, ECUValve, ECU_SENSORS, ECU_VALVES, MAX_ECU_SENSORS, MAX_ECU_VALVES}};
+use teensy4_bsp::{hal::{adc::{ADC, AnalogInput, ResolutionBits}, gpio::{Output, GPIO}, iomuxc::adc::ADC1}, t41};
 
 pub struct Teensy41ECUHardware {
     sv1_pin: GPIO<t41::P2, Output>,
@@ -64,7 +54,7 @@ impl Teensy41ECUHardware {
         p8_pin: AnalogInput<ADC1, t41::P14>,
         adc1: ADC<ADC1>,
     ) -> Teensy41ECUHardware {
-        Teensy41ECUHardware {
+        let mut inst = Teensy41ECUHardware {
             sv1_pin,
             sv2_pin,
             sv3_pin,
@@ -90,7 +80,11 @@ impl Teensy41ECUHardware {
             raw_sensor_readings: [0_u16; MAX_ECU_SENSORS],
             sensor_readings: [0.0_f32; MAX_ECU_SENSORS],
             sparking: false,
-        }
+        };
+
+        inst.adc1.set_resolution(ResolutionBits::Res12);
+
+        inst
     }
 
     pub fn read_sensors(&mut self) {
@@ -104,6 +98,8 @@ impl Teensy41ECUHardware {
 
             self.raw_sensor_readings[index] = raw_reading;
             self.sensor_readings[index] = reading;
+
+            log::info!("{}: {}", index, raw_reading);
         }
     }
 
@@ -115,6 +111,16 @@ impl Teensy41ECUHardware {
             ECUSensor::IgniterChamberPressure => self.adc1.read(&mut self.p3_pin).unwrap(),
             ECUSensor::FuelTankPressure => self.adc1.read(&mut self.p4_pin).unwrap(),
         }
+    }
+
+    pub fn flip_valves(&mut self) {
+        let val = if self.valve_states[0] > 0 { 0 } else { 255 };
+        
+        for valve in &ECU_VALVES {
+            self.set_valve(*valve, val);
+        }
+
+        log::info!("Setting all valves to {}", val);
     }
 }
 

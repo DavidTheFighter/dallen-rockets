@@ -1,0 +1,1 @@
+cargo objcopy --target thumbv7em-none-eabihf --release -- -O ihex teensy41-ecu.hex

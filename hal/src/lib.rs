@@ -8,7 +8,7 @@ pub mod ecu_mock;
 
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
 pub struct SensorConfig {
     pub premin: f32,
     pub premax: f32,

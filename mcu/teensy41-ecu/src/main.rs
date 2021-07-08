@@ -4,6 +4,9 @@
 #![no_std]
 #![no_main]
 
+#[macro_use]
+extern crate lazy_static;
+
 use bsp::hal::adc;
 use ecu::Ecu;
 use ecu::HALs;
@@ -24,9 +27,12 @@ mod logging;
 #[cortex_m_rt::entry]
 fn main() -> ! {
     let mut p = bsp::Peripherals::take().unwrap();
-    let mut _systick = bsp::SysTick::new(cortex_m::Peripherals::take().unwrap().SYST);
+    let mut systick = bsp::SysTick::new(cortex_m::Peripherals::take().unwrap().SYST);
     let pins = bsp::t41::into_pins(p.iomuxc);
     let mut _led = bsp::configure_led(pins.p13);
+
+    // See the `logging` module docs for more info.
+    assert!(logging::init().is_ok());
 
     let (adc1_builder, _) = p.adc.clock(&mut p.ccm.handle);
     let adc1 = adc1_builder.build(adc::ClockSelect::default(), adc::ClockDivision::default());
@@ -55,14 +61,13 @@ fn main() -> ! {
     );
 
     let mut teensy41_comms = Teensy41ECUComms::new(0);
-
     let mut ecu = Ecu::new(0);
 
-    // See the `logging` module docs for more info.
-    assert!(logging::init().is_ok());
+    log::info!("Completed initialization");
 
     loop {
         teensy41_hardware.read_sensors();
+        teensy41_hardware.flip_valves();
 
         ecu.update(
             &mut HALs {
@@ -71,5 +76,7 @@ fn main() -> ! {
             },
             0.001,
         );
+
+        systick.delay(1000);
     }
 }

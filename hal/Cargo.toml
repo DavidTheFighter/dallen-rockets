@@ -9,3 +9,4 @@ edition = "2018"
 [dependencies]
 serde = { version = "1.0", default-features = false }
 postcard = "0.7.0"
+nb = "1.0.0"

@@ -65,6 +65,7 @@ impl Ecu {
         let packet = Packet::ControllerAborted(NetworkAddress::EngineController(
             self.enginer_controller_index,
         ));
+
         if let Err(_err) = hals.comms.transmit(&packet, NetworkAddress::Broadcast) {
             //something
         }

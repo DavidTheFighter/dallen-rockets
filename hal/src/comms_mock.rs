@@ -13,11 +13,11 @@ impl CommsInterface for CommsMock {
         &mut self,
         _packet: &Packet,
         _address: NetworkAddress,
-    ) -> Result<(), TransferError> {
+    ) -> nb::Result<(), TransferError> {
         Ok(())
     }
 
-    fn receive(&mut self) -> Option<Packet> {
+    fn receive(&mut self) -> Option<(Packet, NetworkAddress)> {
         None
     }
 }

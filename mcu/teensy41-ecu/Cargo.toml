@@ -12,6 +12,7 @@ cortex-m-rt = "0.6.13"
 embedded-hal = "0.2.3"
 log = "0.4.11"
 teensy4-panic = "0.2.0"
+nb = "1.0.0"
 
 [dependencies.teensy4-bsp]
 version = "0.2"
@@ -25,6 +26,14 @@ path = "../../ecu"
 
 [dependencies.teensy4-canfd]
 git = "https://github.com/DavidTheFighter/teensy4-canfd.git"
+
+[dependencies.ringbuffer]
+version = "0.7.1"
+default-features = false
+
+[dependencies.lazy_static]
+version = "1.4.0"
+features = ["spin_no_std"]
 
 # Don't optimize build dependencies, like proc macros.
 # Helps with build times.

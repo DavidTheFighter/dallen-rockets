@@ -62,7 +62,7 @@ pub trait ECUHardware {
     fn configure_sensor(&mut self, sensor: ECUSensor, config: &SensorConfig);
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ECUDataFrame {
     pub time: f32,
     pub igniter_state: IgniterState,
@@ -71,7 +71,7 @@ pub struct ECUDataFrame {
     pub sparking: bool,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct IgniterTimingConfig {
     pub prefire_duration_ms: u16,
     pub fire_duration_ms: u16,
