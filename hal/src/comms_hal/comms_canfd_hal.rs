@@ -1,6 +1,8 @@
 use super::{NetworkAddress, Packet, SerializationError, TransferError, MAX_SERIALIZE_LENGTH};
 use serde::{Deserialize, Serialize};
 
+pub const CANFD_BUFFER_SIZE: usize = MAX_SERIALIZE_LENGTH + 4;
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum CANFDTransferError {
     MetadataSerialization,
@@ -37,7 +39,7 @@ impl NetworkAddress {
 
 pub fn serialize_packet(
     packet: &Packet,
-    buffer: &mut [u8; MAX_SERIALIZE_LENGTH + 4],
+    buffer: &mut [u8; CANFD_BUFFER_SIZE],
 ) -> Result<usize, TransferError> {
     match packet.serialize(&mut buffer[4..]) {
         Ok(len) => {
@@ -61,7 +63,7 @@ pub fn serialize_packet(
 }
 
 pub fn deserialize_packet(
-    buffer: &mut [u8; MAX_SERIALIZE_LENGTH + 4],
+    buffer: &mut [u8; CANFD_BUFFER_SIZE],
 ) -> Result<Packet, SerializationError> {
     let metadata = CANFDPacketMetadata::from_byte_slice(buffer);
 

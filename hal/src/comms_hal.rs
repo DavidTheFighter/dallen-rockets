@@ -1,4 +1,5 @@
 pub mod comms_canfd_hal;
+pub mod comms_ethernet_hal;
 
 use postcard::{
     flavors::{Cobs, Slice},

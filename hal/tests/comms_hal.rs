@@ -1,6 +1,7 @@
 use hal::{
     comms_hal::{
-        comms_canfd_hal::{self, CANFDPacketMetadata},
+        comms_canfd_hal::{self, CANFDPacketMetadata, CANFD_BUFFER_SIZE},
+        comms_ethernet_hal::{self, ETHERNET_BUFFER_SIZE},
         ECUTelemtryData, NetworkAddress, Packet, MAX_SERIALIZE_LENGTH,
     },
     ecu_hal::{
@@ -37,7 +38,7 @@ fn serialize_deserialize_eq() {
 
 #[test]
 fn canfd_serialize_deserialize_eq() {
-    let mut buffer = [0_u8; MAX_SERIALIZE_LENGTH + 4];
+    let mut buffer = [0_u8; CANFD_BUFFER_SIZE];
 
     for packet in get_all_packets().iter() {
         println!("Before: {:?}", *packet);
@@ -52,6 +53,32 @@ fn canfd_serialize_deserialize_eq() {
         println!("After {:?}\n", other_packet);
 
         assert!(*packet == other_packet);
+    }
+}
+
+#[test]
+fn ethernet_serialize_deserialize_eq() {
+    let mut buffer = [0_u8; ETHERNET_BUFFER_SIZE];
+
+    for packet in get_all_packets().iter() {
+        let from_address = NetworkAddress::MissionControl;
+        let to_address = NetworkAddress::EngineController(4);
+
+        println!("Before: {:?}", *packet);
+        println!("\t{:?} -> {:?}\n", from_address, to_address);
+
+        comms_ethernet_hal::serialize_packet(packet, from_address, to_address, &mut buffer)
+            .unwrap();
+
+        let (des_packet, des_from, des_to) =
+            comms_ethernet_hal::deserialize_packet(&mut buffer).unwrap();
+
+        println!("After {:?}", des_packet);
+        println!("\t{:?} -> {:?}\n", des_from, des_to);
+
+        assert!(*packet == des_packet);
+        assert!(from_address == des_from);
+        assert!(to_address == des_to);
     }
 }
 
