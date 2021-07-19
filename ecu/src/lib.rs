@@ -3,7 +3,7 @@
 
 use hal::{
     comms_hal::{CommsInterface, ECUTelemtryData, NetworkAddress, Packet},
-    ecu_hal::{ECUDataFrame, ECUHardware, MAX_ECU_SENSORS, MAX_ECU_VALVES},
+    ecu_hal::{ECUDataFrame, ECUHardware, ECUValve, MAX_ECU_SENSORS, MAX_ECU_VALVES},
 };
 use igniter::Igniter;
 
@@ -21,23 +21,31 @@ pub struct Ecu {
     elapsed_since_last_telemetry: f32,
     enginer_controller_index: u8,
     telemetry_rate: f32,
+    max_loop_time_per_telem: f32,
 }
 
 impl Ecu {
-    pub fn new(enginer_controller_index: u8) -> Ecu {
+    pub fn new(enginer_controller_index: u8, hals: &mut HALs) -> Ecu {
+        hals.hardware.set_valve(ECUValve::IgniterFuelMain, 0);
+        hals.hardware.set_valve(ECUValve::IgniterGOxMain, 0);
+        hals.hardware.set_valve(ECUValve::FuelPress, 0);
+        hals.hardware.set_valve(ECUValve::FuelVent, 255);
+
         Ecu {
             igniter: Igniter::new(),
             elapsed_since_last_telemetry: 0.0,
             enginer_controller_index,
             telemetry_rate: DEFAULT_TELEMETRY_RATE,
+            max_loop_time_per_telem: 0.0,
         }
     }
 
     pub fn update(&mut self, hals: &mut HALs, elapsed: f32) {
         self.elapsed_since_last_telemetry += elapsed;
+        self.max_loop_time_per_telem = self.max_loop_time_per_telem.max(elapsed);
 
         if self.elapsed_since_last_telemetry > self.telemetry_rate {
-            self.transmit_telemetry(hals);
+            self.transmit_telemetry(hals, elapsed);
             self.elapsed_since_last_telemetry -= self.telemetry_rate;
         }
 
@@ -75,18 +83,20 @@ impl Ecu {
         &mut self.igniter
     }
 
-    fn transmit_telemetry(&mut self, hals: &mut HALs) {
+    fn transmit_telemetry(&mut self, hals: &mut HALs, elapsed: f32) {
         let mut telem = ECUTelemtryData {
             ecu_data: ECUDataFrame {
                 time: 0.0,
                 igniter_state: self.igniter.get_current_state(),
-                valve_states: [0_u8; MAX_ECU_VALVES],
-                sensor_states: [0_u16; MAX_ECU_SENSORS],
+                valve_states: [69_u8; MAX_ECU_VALVES],
+                sensor_states: [42_u16; MAX_ECU_SENSORS],
                 sparking: hals.hardware.get_sparking(),
             },
-            avg_loop_time_ms: 0.0,
-            max_loop_time_ms: 0.0,
+            avg_loop_time_ms: elapsed,
+            max_loop_time_ms: self.max_loop_time_per_telem,
         };
+
+        self.max_loop_time_per_telem = 0.0;
 
         for (telem_valve, valve_state) in telem
             .ecu_data
@@ -106,11 +116,11 @@ impl Ecu {
             *telem_sensor = *sensor;
         }
 
-        if let Err(_err) = hals
+        if let Err(err) = hals
             .comms
             .transmit(&Packet::ECUTelemtry(telem), NetworkAddress::MissionControl)
         {
-            // something
+            log::error!("Failed to send packet, got {:?}", err);
         }
     }
 }

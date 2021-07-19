@@ -8,6 +8,7 @@
 extern crate lazy_static;
 
 use bsp::hal::adc;
+use bsp::hal::pit;
 use ecu::Ecu;
 use ecu::HALs;
 use teensy4_bsp as bsp;
@@ -27,9 +28,9 @@ mod logging;
 #[cortex_m_rt::entry]
 fn main() -> ! {
     let mut p = bsp::Peripherals::take().unwrap();
-    let mut systick = bsp::SysTick::new(cortex_m::Peripherals::take().unwrap().SYST);
+    let mut _systick = bsp::SysTick::new(cortex_m::Peripherals::take().unwrap().SYST);
     let pins = bsp::t41::into_pins(p.iomuxc);
-    let mut _led = bsp::configure_led(pins.p13);
+    let mut led = bsp::configure_led(pins.p13);
 
     // See the `logging` module docs for more info.
     assert!(logging::init().is_ok());
@@ -61,22 +62,56 @@ fn main() -> ! {
     );
 
     let mut teensy41_comms = Teensy41ECUComms::new(0);
-    let mut ecu = Ecu::new(0);
+    let mut ecu = Ecu::new(0, &mut HALs {
+        hardware: &mut teensy41_hardware,
+        comms: &mut teensy41_comms,
+    });
+
+    let (_, ipg_hz) = p.ccm.pll1.set_arm_clock(
+        bsp::hal::ccm::PLL1::ARM_HZ,
+        &mut p.ccm.handle,
+        &mut p.dcdc,
+    );
+
+    let mut cfg = p.ccm.perclk.configure(
+        &mut p.ccm.handle,
+        bsp::hal::ccm::perclk::PODF::DIVIDE_3,
+        bsp::hal::ccm::perclk::CLKSEL::IPG(ipg_hz),
+    );
+
+    let (timer0, timer1, _, _) = p.pit.clock(&mut cfg);
+    let mut timer = pit::chain(timer0, timer1);
 
     log::info!("Completed initialization");
 
+    let mut counter = 0.0;
+    let mut last_delta = 0.001;
     loop {
-        teensy41_hardware.read_sensors();
-        teensy41_hardware.flip_valves();
+        let (_, period) = timer.time(|| {
+            teensy41_hardware.read_sensors();
 
-        ecu.update(
-            &mut HALs {
-                hardware: &mut teensy41_hardware,
-                comms: &mut teensy41_comms,
-            },
-            0.001,
-        );
+            ecu.update(
+                &mut HALs {
+                    hardware: &mut teensy41_hardware,
+                    comms: &mut teensy41_comms,
+                },
+                last_delta,
+            );
+            
+            if counter > 1.0 {
+                led.toggle();
 
-        systick.delay(1000);
+                counter = 0.0;
+            }
+    
+            counter += last_delta;
+        });
+
+        match period {
+            Some(period) => {
+                last_delta = period.as_secs_f32();
+            }
+            None => log::error!("Loop timer expired!")
+        }
     }
 }

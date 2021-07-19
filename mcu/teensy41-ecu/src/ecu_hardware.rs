@@ -1,13 +1,25 @@
 use embedded_hal::adc::OneShot;
-use hal::{SensorConfig, ecu_hal::{ECUHardware, ECUSensor, ECUValve, ECU_SENSORS, ECU_VALVES, MAX_ECU_SENSORS, MAX_ECU_VALVES}};
-use teensy4_bsp::{hal::{adc::{ADC, AnalogInput, ResolutionBits}, gpio::{Output, GPIO}, iomuxc::adc::ADC1}, t41};
+use hal::{
+    ecu_hal::{
+        ECUHardware, ECUSensor, ECUValve, ECU_SENSORS, MAX_ECU_SENSORS, MAX_ECU_VALVES,
+    },
+    SensorConfig,
+};
+use teensy4_bsp::{
+    hal::{
+        adc::{AnalogInput, ResolutionBits, ADC},
+        gpio::{Output, GPIO},
+        iomuxc::adc::ADC1,
+    },
+    t41,
+};
 
 pub struct Teensy41ECUHardware {
     sv1_pin: GPIO<t41::P2, Output>,
     sv2_pin: GPIO<t41::P3, Output>,
     sv3_pin: GPIO<t41::P4, Output>,
     sv4_pin: GPIO<t41::P5, Output>,
-    sv5_pin: GPIO<t41::P6, Output>,
+    _sv5_pin: GPIO<t41::P6, Output>,
     _sv6_pin: GPIO<t41::P7, Output>,
     spark_pin: GPIO<t41::P8, Output>,
     t1_pin: AnalogInput<ADC1, t41::P23>,
@@ -59,7 +71,7 @@ impl Teensy41ECUHardware {
             sv2_pin,
             sv3_pin,
             sv4_pin,
-            sv5_pin,
+            _sv5_pin: sv5_pin,
             _sv6_pin: sv6_pin,
             spark_pin,
             t1_pin,
@@ -98,8 +110,6 @@ impl Teensy41ECUHardware {
 
             self.raw_sensor_readings[index] = raw_reading;
             self.sensor_readings[index] = reading;
-
-            log::info!("{}: {}", index, raw_reading);
         }
     }
 
@@ -111,16 +121,6 @@ impl Teensy41ECUHardware {
             ECUSensor::IgniterChamberPressure => self.adc1.read(&mut self.p3_pin).unwrap(),
             ECUSensor::FuelTankPressure => self.adc1.read(&mut self.p4_pin).unwrap(),
         }
-    }
-
-    pub fn flip_valves(&mut self) {
-        let val = if self.valve_states[0] > 0 { 0 } else { 255 };
-        
-        for valve in &ECU_VALVES {
-            self.set_valve(*valve, val);
-        }
-
-        log::info!("Setting all valves to {}", val);
     }
 }
 
@@ -141,7 +141,6 @@ impl ECUHardware for Teensy41ECUHardware {
             ECUValve::FuelVent => set_gpio!(self.sv2_pin, state > 0),
             ECUValve::IgniterFuelMain => set_gpio!(self.sv3_pin, state > 0),
             ECUValve::IgniterGOxMain => set_gpio!(self.sv4_pin, state > 0),
-            ECUValve::IgniterFuelPurge => set_gpio!(self.sv5_pin, state > 0),
         };
 
         self.valve_states[valve as usize] = state;

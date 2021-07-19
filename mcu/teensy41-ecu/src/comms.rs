@@ -3,8 +3,9 @@ mod receive;
 use cortex_m::interrupt;
 use nb::Error::{Other, WouldBlock};
 
-use hal::comms_hal::comms_canfd_hal::{deserialize_packet, serialize_packet, CANFDTransferError};
-use hal::comms_hal::{CommsInterface, NetworkAddress, Packet, TransferError, MAX_SERIALIZE_LENGTH};
+use hal::comms_hal::comms_canfd_hal::CANFDTransferError;
+use hal::comms_hal::comms_canfd_hal::{self, CANFD_BUFFER_SIZE};
+use hal::comms_hal::{CommsInterface, NetworkAddress, Packet, TransferError};
 use teensy4_canfd::can_error::RxTxError;
 use teensy4_canfd::{
     config::{Clock, Config, Id, MailboxConfig, RegionConfig, RxMailboxConfig, TimingConfig},
@@ -144,19 +145,17 @@ impl CommsInterface for Teensy41ECUComms {
         packet: &Packet,
         address: NetworkAddress,
     ) -> nb::Result<(), TransferError> {
-        let mut buffer = [0_u8; MAX_SERIALIZE_LENGTH + 4];
+        let mut buffer = [0_u8; CANFD_BUFFER_SIZE];
 
-        match serialize_packet(packet, &mut buffer) {
+        match comms_canfd_hal::serialize_packet(packet, &mut buffer) {
             Ok(data_len) => {
                 let tx_frame = TxFDFrame {
                     id: self.get_outgoing_id(address, data_len),
-                    buffer: &buffer,
+                    buffer: &buffer[0..(data_len + 4)],
                     priority: None,
                 };
 
-                let transfer_result = interrupt::free(|cs| {
-                    self.canfd.transfer_nb(cs, &tx_frame)
-                });
+                let transfer_result = interrupt::free(|cs| self.canfd.transfer_nb(cs, &tx_frame));
 
                 match transfer_result {
                     Ok(_) => Ok(()),
@@ -180,7 +179,7 @@ impl CommsInterface for Teensy41ECUComms {
 
         match rx_frame {
             Some(mut rx_frame) => {
-                let packet = deserialize_packet(&mut rx_frame.buffer);
+                let packet = comms_canfd_hal::deserialize_packet(&mut rx_frame.buffer);
                 let from_id = Teensy41ECUComms::get_incoming_id(rx_frame.id);
 
                 match (packet, from_id) {

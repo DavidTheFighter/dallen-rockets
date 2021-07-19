@@ -88,11 +88,13 @@ void setup() {
 
     panic();
   }
+
+  Serial.println("Done!");
 }
 
 void sendPacket(CommsMessage &msg) {
   udp.beginPacket(mcctrlIP, mcctrlPort);
-  udp.write(reinterpret_cast<const uint8_t*>(&msg), sizeof(msg));
+  udp.write(reinterpret_cast<const uint8_t*>(&msg), sizeof(CommsMessage));
   udp.endPacket(); 
 }
 
@@ -101,12 +103,17 @@ void sendPacket(CommsMessage &msg) {
 #define TRUE_LENGTH_MASK 0x3F
 
 void onReceive(const CANFD_message_t &msg) {
+  uint32_t metadata = uint32_t(msg.buf[0]) 
+    + (uint32_t(msg.buf[1]) << 8) 
+    + (uint32_t(msg.buf[2]) << 16) 
+    + (uint32_t(msg.buf[3]) << 24);
+
   CommsMessage send = {};
   send.from_address = (msg.id >> FROM_ADDRESS_SHIFT) & ID_5_BIT_MASK;
   send.to_address = msg.id & ID_5_BIT_MASK;
-  send.data_len = constrain(msg.buf[0] & TRUE_LENGTH_MASK, 1, MAX_SERIALIZE_LENGTH);
-
-  memcpy(send.data, &msg.buf[4], msg.len);
+  send.data_len = constrain(metadata & TRUE_LENGTH_MASK, 1, MAX_SERIALIZE_LENGTH);
+  
+  memcpy(send.data, &msg.buf[4], sizeof(send.data));
 
   sendPacket(send);
 }
@@ -116,13 +123,14 @@ void onReceive(const CANFD_message_t &msg) {
 uint8_t incomingBuffer[INCOMING_BUFFER_SIZE];
 
 uint32_t counter = 0;
+uint32_t flip = 0;
 
 void loop() {
   delayMicroseconds(10);
 
   if (counter % 100000 == 0) {
-    digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN));
-    //Serial.println("PULSE");
+    digitalWrite(LED_BUILTIN, (flip++) % 2);
+    Serial.println("PULSE");
   }
 
   if (counter % 10000 == 0) {
@@ -137,6 +145,7 @@ void loop() {
 
   int packetSize;
   while ((packetSize = udp.parsePacket()) != 0) {
+    Serial.println("Got packet");
     udp.read(incomingBuffer, INCOMING_BUFFER_SIZE);
 
     CommsMessage recv;
@@ -158,9 +167,9 @@ void loop() {
     ctrl += constrain(recv.data_len, 1, MAX_SERIALIZE_LENGTH);
 
     CANFD_message_t msg;
-    msg.id = (recv.to_address & ID_5_BIT_MASK);
-    msg.id += ((recv.from_address & ID_5_BIT_MASK) << FROM_ADDRESS_SHIFT);
-    msg.id += ((recv.data_len + 4 > 32 ? 1 : 0) << 5);
+    msg.id = recv.to_address & ID_5_BIT_MASK;
+    msg.id += (recv.from_address & ID_5_BIT_MASK) << FROM_ADDRESS_SHIFT;
+    msg.id += (recv.data_len + 4 > 32 ? 1 : 0) << 5;
     msg.len = recv.data_len + 4;
     memcpy(&msg.buf[0], &ctrl, sizeof(ctrl));
     memcpy(&msg.buf[4], &incomingBuffer[4], recv.data_len);

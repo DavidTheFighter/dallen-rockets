@@ -107,8 +107,8 @@ fn get_all_packets() -> [Packet; 7] {
         ecu_data: ECUDataFrame {
             time: 420.69,
             igniter_state: hal::ecu_hal::IgniterState::Idle,
-            valve_states: [42_u8; MAX_ECU_VALVES],
             sensor_states: [69_u16; MAX_ECU_SENSORS],
+            valve_states: [42_u8; MAX_ECU_VALVES],
             sparking: false,
         },
         avg_loop_time_ms: 420.420,

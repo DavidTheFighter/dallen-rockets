@@ -77,7 +77,6 @@ impl Igniter {
         hals.hardware.set_sparking(false);
         hals.hardware.set_valve(ECUValve::IgniterFuelMain, 0);
         hals.hardware.set_valve(ECUValve::IgniterGOxMain, 0);
-        hals.hardware.set_valve(ECUValve::IgniterFuelPurge, 0);
     }
 
     // ----- Prefire State ----- //
@@ -87,7 +86,6 @@ impl Igniter {
         hals.hardware.set_sparking(true);
         hals.hardware.set_valve(ECUValve::IgniterFuelMain, 0);
         hals.hardware.set_valve(ECUValve::IgniterGOxMain, 255);
-        hals.hardware.set_valve(ECUValve::IgniterFuelPurge, 0);
     }
 
     fn update_prefire_state(&mut self, hals: &mut HALs) {
@@ -105,7 +103,6 @@ impl Igniter {
         hals.hardware.set_sparking(true);
         hals.hardware.set_valve(ECUValve::IgniterFuelMain, 255);
         hals.hardware.set_valve(ECUValve::IgniterGOxMain, 255);
-        hals.hardware.set_valve(ECUValve::IgniterFuelPurge, 0);
     }
 
     fn update_firing_state(&mut self, hals: &mut HALs) {
@@ -123,7 +120,6 @@ impl Igniter {
         hals.hardware.set_sparking(false);
         hals.hardware.set_valve(ECUValve::IgniterFuelMain, 0);
         hals.hardware.set_valve(ECUValve::IgniterGOxMain, 255);
-        hals.hardware.set_valve(ECUValve::IgniterFuelPurge, 255);
     }
 
     fn update_purging_state(&mut self, hals: &mut HALs) {
