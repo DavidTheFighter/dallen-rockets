@@ -7,7 +7,7 @@ use hal::{
 };
 use igniter::Igniter;
 
-pub const DEFAULT_TELEMETRY_RATE: f32 = 0.01;
+pub const DEFAULT_TELEMETRY_RATE: f32 = 0.0005;
 
 pub mod igniter;
 
@@ -74,8 +74,8 @@ impl Ecu {
             self.enginer_controller_index,
         ));
 
-        if let Err(_err) = hals.comms.transmit(&packet, NetworkAddress::Broadcast) {
-            //something
+        if let Err(err) = hals.comms.transmit(&packet, NetworkAddress::Broadcast) {
+            log::error!("Failed to send abort message, got {:?}", err);
         }
     }
 
@@ -92,8 +92,8 @@ impl Ecu {
                 sensor_states: [42_u16; MAX_ECU_SENSORS],
                 sparking: hals.hardware.get_sparking(),
             },
-            avg_loop_time_ms: elapsed,
-            max_loop_time_ms: self.max_loop_time_per_telem,
+            avg_loop_time: self.max_loop_time_per_telem,
+            max_loop_time: self.max_loop_time_per_telem,
         };
 
         self.max_loop_time_per_telem = 0.0;

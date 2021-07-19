@@ -131,6 +131,6 @@ impl Packet {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ECUTelemtryData {
     pub ecu_data: ECUDataFrame,
-    pub avg_loop_time_ms: f32,
-    pub max_loop_time_ms: f32,
+    pub avg_loop_time: f32, // In seconds
+    pub max_loop_time: f32, // In seconds
 }

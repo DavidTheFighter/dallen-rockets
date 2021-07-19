@@ -111,8 +111,8 @@ fn get_all_packets() -> [Packet; 7] {
             valve_states: [42_u8; MAX_ECU_VALVES],
             sparking: false,
         },
-        avg_loop_time_ms: 420.420,
-        max_loop_time_ms: 69.96,
+        avg_loop_time: 420.420,
+        max_loop_time: 69.96,
     });
     let controller_aborted = Packet::ControllerAborted(NetworkAddress::MissionControl);
 

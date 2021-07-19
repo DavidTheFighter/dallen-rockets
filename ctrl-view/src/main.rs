@@ -10,7 +10,7 @@ use crossterm::event::{self, Event, KeyCode, KeyEvent};
 use display::ConsoleDisplay;
 use hal::{
     comms_hal::Packet,
-    ecu_hal::{ECUSensor, ECUValve, ECU_SENSORS, ECU_VALVES},
+    ecu_hal::{ECUSensor, ECUValve, IgniterState, ECU_SENSORS, ECU_VALVES},
 };
 use recv::RecvOutput;
 
@@ -54,7 +54,10 @@ fn main() {
         display.set_valve_full(&format!("{:?}", valve), *name, false);
     }
 
+    display.set_misc("IGN State", &format!("{:?}", IgniterState::Idle));
     display.set_misc("Spark", "Off");
+    display.set_misc("ECU Max Δt", "0.0 ms");
+    display.set_misc("ECU Loop Freq", "0 Hz");
 
     let (recv_thread_tx, recv_thread_rx) = mpsc::channel();
 
@@ -89,7 +92,7 @@ fn main() {
                                 {
                                     display.set_sensor_value(
                                         &format!("{:?}", *sensor),
-                                        *value as f32,
+                                        ((*value as f32) / 4096.0) * (150.0),
                                         true,
                                     )
                                 }
@@ -100,7 +103,10 @@ fn main() {
                                     display.set_valve_value(&format!("{:?}", *valve), *value > 0);
                                 }
 
+                                display.set_misc("IGN State", &format!("{:?}", data.ecu_data.igniter_state));
                                 display.set_misc("Spark", if data.ecu_data.sparking { "Sparking" } else { "Off" });
+                                display.set_misc("ECU Max Δt", &format!("{:.3} ms", data.avg_loop_time * 1000.0));
+                                display.set_misc("ECU Loop Freq", &format!("{:.1} kHz", 1e-3 / data.avg_loop_time));
                             }
                             _ => {}
                         }
