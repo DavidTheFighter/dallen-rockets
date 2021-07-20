@@ -27,9 +27,8 @@ path = "../../ecu"
 [dependencies.teensy4-canfd]
 git = "https://github.com/DavidTheFighter/teensy4-canfd.git"
 
-[dependencies.ringbuffer]
-version = "0.7.1"
-default-features = false
+[dependencies.atomic_queue]
+git = "https://github.com/thejpster/atomic-queue-rs.git"
 
 [dependencies.lazy_static]
 version = "1.4.0"

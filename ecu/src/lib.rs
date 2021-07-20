@@ -49,6 +49,15 @@ impl Ecu {
             self.elapsed_since_last_telemetry -= self.telemetry_rate;
         }
 
+        loop {
+            match hals.comms.receive() {
+                Some((packet, _from)) => {
+                    self.on_packet(hals, &packet);
+                },
+                None => break
+            }
+        }
+
         self.igniter.update(elapsed, hals);
     }
 

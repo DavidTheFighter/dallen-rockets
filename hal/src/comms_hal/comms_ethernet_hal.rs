@@ -36,7 +36,7 @@ pub fn serialize_packet(
                 *to = *from;
             }
 
-            Ok(len)
+            Ok(len + 6)
         }
         Err(err) => Err(TransferError::Serialization(err)),
     }

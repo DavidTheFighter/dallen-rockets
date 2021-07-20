@@ -172,7 +172,7 @@ void loop() {
     msg.id += (recv.data_len + 4 > 32 ? 1 : 0) << 5;
     msg.len = recv.data_len + 4;
     memcpy(&msg.buf[0], &ctrl, sizeof(ctrl));
-    memcpy(&msg.buf[4], &incomingBuffer[4], recv.data_len);
+    memcpy(&msg.buf[4], recv.data, recv.data_len);
 
     can3.write(msg);
   }

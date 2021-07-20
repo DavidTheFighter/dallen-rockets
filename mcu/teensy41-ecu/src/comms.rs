@@ -182,9 +182,14 @@ impl CommsInterface for Teensy41ECUComms {
                 let packet = comms_canfd_hal::deserialize_packet(&mut rx_frame.buffer);
                 let from_id = Teensy41ECUComms::get_incoming_id(rx_frame.id);
 
+                log::info!("parsing packet {:?}", packet);
+
                 match (packet, from_id) {
                     (Ok(packet), Some(from_addr)) => Some((packet, from_addr)),
-                    _ => None, // TODO Throw some kind of error somehow
+                    _ => {
+                        log::error!("Failed to parse incoming packet");
+                        None
+                    }
                 }
             }
             None => None,
