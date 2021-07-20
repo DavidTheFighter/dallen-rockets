@@ -93,7 +93,7 @@ void setup() {
 }
 
 void sendPacket(CommsMessage &msg) {
-  udp.beginPacket(mcctrlIP, mcctrlPort);
+  udp.beginPacket(IPAddress(10, 0, 0, 255), mcctrlPort);
   udp.write(reinterpret_cast<const uint8_t*>(&msg), sizeof(CommsMessage));
   udp.endPacket(); 
 }
