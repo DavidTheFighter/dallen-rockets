@@ -1,10 +1,7 @@
-use std::{
-    io::stdout,
-    sync::{
+use std::{io::stdout, sync::{
         atomic::{AtomicBool, Ordering},
         mpsc,
-    },
-};
+    }, time::Instant};
 
 use crossterm::event::{self, Event, KeyCode, KeyEvent};
 use display::ConsoleDisplay;
@@ -16,10 +13,34 @@ use recv::RecvOutput;
 
 pub mod display;
 pub mod recv;
+pub mod record;
 
 pub(crate) static RUNNING: AtomicBool = AtomicBool::new(true);
 
 pub const WATCHDOG_TIMEOUT_MS: usize = 250;
+
+const DISPLAY_SENSORS: [(ECUSensor, &str, &str); 5] = [
+    (ECUSensor::FuelTankPressure, "Fuel Tank", "psi"),
+    (ECUSensor::IgniterThroatTemp, "IGN Throat", "\u{b0}C"),
+    (ECUSensor::IgniterFuelInjectorPressure, "IGN Fuel-Inj", "psi"),
+    (ECUSensor::IgniterGOxInjectorPressure, "IGN GOx-Inj", "psi"),
+    (ECUSensor::IgniterChamberPressure, "IGN Chamber", "psi"),
+];
+
+const SENSORS_CONFIG: [f32; 5] = [
+    4096.0,
+    200.0,
+    150.0,
+    150.0,
+    300.0,
+];
+
+const DISPLAY_VALVES: [(ECUValve, &str); 4] = [
+    (ECUValve::FuelPress, "Fuel Press"),
+    (ECUValve::FuelVent, "Fuel Vent"),
+    (ECUValve::IgniterFuelMain, "IGN Fuel Main"),
+    (ECUValve::IgniterGOxMain, "IGN GOx Main"),
+];
 
 fn main() {
     let mut display = ConsoleDisplay::new(stdout());
@@ -27,30 +48,11 @@ fn main() {
     display.set_watchdog("ECU(0)", false);
     display.set_watchdog("CET", false);
 
-    let sensors = [
-        (ECUSensor::FuelTankPressure, "Fuel Tank", "psi"),
-        (ECUSensor::IgniterThroatTemp, "IGN Throat", "\u{b0}C"),
-        (
-            ECUSensor::IgniterFuelInjectorPressure,
-            "IGN Fuel-Inj",
-            "psi",
-        ),
-        (ECUSensor::IgniterGOxInjectorPressure, "IGN GOx-Inj", "psi"),
-        (ECUSensor::IgniterChamberPressure, "IGN Chamber", "psi"),
-    ];
-
-    let valves = [
-        (ECUValve::FuelPress, "Fuel Press"),
-        (ECUValve::FuelVent, "Fuel Vent"),
-        (ECUValve::IgniterFuelMain, "IGN Fuel Main"),
-        (ECUValve::IgniterGOxMain, "IGN GOx Main"),
-    ];
-
-    for (sensor, name, units) in &sensors {
+    for (sensor, name, units) in &DISPLAY_SENSORS {
         display.set_sensor_full(&format!("{:?}", sensor), *name, -42.0, *units, false);
     }
 
-    for (valve, name) in &valves {
+    for (valve, name) in &DISPLAY_VALVES {
         display.set_valve_full(&format!("{:?}", valve), *name, false);
     }
 
@@ -58,23 +60,38 @@ fn main() {
     display.set_misc("Spark", "Off");
     display.set_misc("ECU Max Δt", "0.0 ms");
     display.set_misc("ECU Loop Freq", "0 Hz");
+    display.set_misc("Recv ECU Freq", "0 Hz");
+    display.set_misc("Recording", "false");
 
     let (recv_thread_tx, recv_thread_rx) = mpsc::channel();
+    let (record_thread_tx, record_thread_rx) = mpsc::channel();
 
     let recv_thread = std::thread::spawn(move || {
         recv::packet_loop(recv_thread_tx);
     });
 
+    let record_thread = std::thread::spawn(move || {
+        record::record_loop(record_thread_rx);
+    });
+
     let mut ecu_timer_ms: usize = WATCHDOG_TIMEOUT_MS;
     let mut cet_timer_ms: usize = WATCHDOG_TIMEOUT_MS;
+    let mut ecu_telem_counter: usize = 0;
+    let mut timer: f64 = 0.0;
+    let mut recording = false;
 
     loop {
+        let start_time = Instant::now();
+
         display.render();
 
         if event::poll(std::time::Duration::from_millis(1)).unwrap() {
             if let Ok(Event::Key(KeyEvent { code, .. })) = event::read() {
                 if code == KeyCode::Esc {
                     break;
+                } else if code == KeyCode::Char('r') {
+                    recording = !recording;
+                    display.set_misc("Recording", &format!("{}", recording));
                 }
             }
         }
@@ -86,13 +103,18 @@ fn main() {
                         match packet {
                             Packet::ECUTelemtry(data) => {
                                 ecu_timer_ms = 0;
+                                ecu_telem_counter += 1;
 
-                                for (value, sensor) in
-                                    data.ecu_data.sensor_states.iter().zip(ECU_SENSORS.iter())
+                                if recording {
+                                    record_thread_tx.send(data.clone()).unwrap();
+                                }
+
+                                for ((value, sensor), range) in
+                                    data.ecu_data.sensor_states.iter().zip(ECU_SENSORS.iter()).zip(SENSORS_CONFIG.iter())
                                 {
                                     display.set_sensor_value(
                                         &format!("{:?}", *sensor),
-                                        ((*value as f32) / 4096.0) * (150.0),
+                                        ((*value as f32) / 4096.0) * (*range),
                                         true,
                                     )
                                 }
@@ -139,10 +161,20 @@ fn main() {
         std::thread::sleep(std::time::Duration::from_millis(10));
         ecu_timer_ms += 10;
         cet_timer_ms += 10;
+
+        if timer >= 1.0 {
+            display.set_misc("Recv ECU Freq", &format!("{:?} Hz", ecu_telem_counter));
+            ecu_telem_counter = 0;
+            timer = 0.0;
+        }
+
+        let elapsed = Instant::now() - start_time;
+        timer += elapsed.as_secs_f64();
     }
 
     RUNNING.store(false, Ordering::Relaxed);
 
     display.quit();
     recv_thread.join().unwrap();
+    record_thread.join().unwrap();
 }

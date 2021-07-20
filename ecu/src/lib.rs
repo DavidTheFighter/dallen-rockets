@@ -44,7 +44,7 @@ impl Ecu {
         self.elapsed_since_last_telemetry += elapsed;
         self.max_loop_time_per_telem = self.max_loop_time_per_telem.max(elapsed);
 
-        if self.elapsed_since_last_telemetry > self.telemetry_rate {
+        while self.elapsed_since_last_telemetry >= self.telemetry_rate {
             self.transmit_telemetry(hals, elapsed);
             self.elapsed_since_last_telemetry -= self.telemetry_rate;
         }

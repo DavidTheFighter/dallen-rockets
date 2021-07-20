@@ -7,6 +7,8 @@
 #[macro_use]
 extern crate lazy_static;
 
+use core::time::Duration;
+
 use bsp::hal::adc;
 use bsp::hal::pit;
 use ecu::Ecu;
@@ -85,9 +87,11 @@ fn main() -> ! {
     log::info!("Completed initialization");
 
     let mut counter = 0.0;
-    let mut last_delta = 0.001;
+    let mut last_delta = Duration::from_millis(1);
     loop {
         let (_, period) = timer.time(|| {
+            let delta = last_delta.as_secs_f32();
+
             teensy41_hardware.read_sensors();
 
             ecu.update(
@@ -95,7 +99,7 @@ fn main() -> ! {
                     hardware: &mut teensy41_hardware,
                     comms: &mut teensy41_comms,
                 },
-                last_delta,
+                delta,
             );
             
             if counter > 1.0 {
@@ -104,13 +108,11 @@ fn main() -> ! {
                 counter = 0.0;
             }
     
-            counter += last_delta;
+            counter += delta;
         });
 
         match period {
-            Some(period) => {
-                last_delta = period.as_secs_f32();
-            }
+            Some(period) => last_delta = period,
             None => log::error!("Loop timer expired!")
         }
     }

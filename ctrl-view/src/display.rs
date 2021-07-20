@@ -37,7 +37,7 @@ impl ConsoleDisplay {
         queue!(
             self.stdout,
             style::Print("ctrl-view".blue()),
-            style::Print(" - Press ESC to exit")
+            style::Print(" - Press 'ESC' to exit. Press 'r' to toggle telemetry recording")
         )
         .unwrap();
         queue!(self.stdout, cursor::MoveToNextLine(1)).unwrap();
