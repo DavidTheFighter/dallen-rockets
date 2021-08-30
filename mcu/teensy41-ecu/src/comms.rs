@@ -151,7 +151,7 @@ impl CommsInterface for Teensy41ECUComms {
             Ok(data_len) => {
                 let tx_frame = TxFDFrame {
                     id: self.get_outgoing_id(address, data_len),
-                    buffer: &buffer[0..(data_len + 4)],
+                    buffer: &buffer[0..data_len],
                     priority: None,
                 };
 
@@ -182,14 +182,13 @@ impl CommsInterface for Teensy41ECUComms {
                 let packet = comms_canfd_hal::deserialize_packet(&mut rx_frame.buffer);
                 let from_id = Teensy41ECUComms::get_incoming_id(rx_frame.id);
 
-                log::info!("parsing packet {:?}", packet);
+                if packet.is_err() || from_id.is_none() {
+                    log::error!("Failed to parse incoming packet. Packet was {:?} and from_addr was ({:?}, {:?})", packet, from_id, rx_frame.id);
+                }
 
                 match (packet, from_id) {
                     (Ok(packet), Some(from_addr)) => Some((packet, from_addr)),
-                    _ => {
-                        log::error!("Failed to parse incoming packet");
-                        None
-                    }
+                    _ => None,
                 }
             }
             None => None,

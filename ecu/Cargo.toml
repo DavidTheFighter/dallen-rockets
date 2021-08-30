@@ -11,3 +11,10 @@ log = "0.4.11"
 
 [dependencies.hal]
 path = "../hal"
+
+[dependencies.atomic_queue]
+git = "https://github.com/thejpster/atomic-queue-rs.git"
+
+[dependencies.lazy_static]
+version = "1.4.0"
+features = ["spin_no_std"]

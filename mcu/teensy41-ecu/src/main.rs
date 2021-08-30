@@ -13,6 +13,7 @@ use bsp::hal::adc;
 use bsp::hal::pit;
 use ecu::Ecu;
 use ecu::HALs;
+use hal::ecu_hal::ECUHardware;
 use teensy4_bsp as bsp;
 use teensy4_panic as _;
 
@@ -40,13 +41,25 @@ fn main() -> ! {
     let (adc1_builder, _) = p.adc.clock(&mut p.ccm.handle);
     let adc1 = adc1_builder.build(adc::ClockSelect::default(), adc::ClockDivision::default());
 
+    let (_, ipg_hz) = p
+        .ccm
+        .pll1
+        .set_arm_clock(bsp::hal::ccm::PLL1::ARM_HZ, &mut p.ccm.handle, &mut p.dcdc);
+
+    let mut cfg = p.ccm.perclk.configure(
+        &mut p.ccm.handle,
+        bsp::hal::ccm::perclk::PODF::DIVIDE_3,
+        bsp::hal::ccm::perclk::CLKSEL::IPG(ipg_hz),
+    );
+
+    let (timer0, timer1, _, _) = p.pit.clock(&mut cfg);
+    let mut timer = pit::chain(timer0, timer1);
+
     let mut teensy41_hardware = Teensy41ECUHardware::new(
         GPIO::new(pins.p2).output(),
         GPIO::new(pins.p3).output(),
         GPIO::new(pins.p4).output(),
-        GPIO::new(pins.p5).output(),
         GPIO::new(pins.p6).output(),
-        GPIO::new(pins.p7).output(),
         GPIO::new(pins.p8).output(),
         AnalogInput::new(pins.p23),
         AnalogInput::new(pins.p22),
@@ -64,25 +77,13 @@ fn main() -> ! {
     );
 
     let mut teensy41_comms = Teensy41ECUComms::new(0);
-    let mut ecu = Ecu::new(0, &mut HALs {
-        hardware: &mut teensy41_hardware,
-        comms: &mut teensy41_comms,
-    });
-
-    let (_, ipg_hz) = p.ccm.pll1.set_arm_clock(
-        bsp::hal::ccm::PLL1::ARM_HZ,
-        &mut p.ccm.handle,
-        &mut p.dcdc,
+    let mut ecu = Ecu::new(
+        0,
+        &mut HALs {
+            hardware: &mut teensy41_hardware,
+            comms: &mut teensy41_comms,
+        },
     );
-
-    let mut cfg = p.ccm.perclk.configure(
-        &mut p.ccm.handle,
-        bsp::hal::ccm::perclk::PODF::DIVIDE_3,
-        bsp::hal::ccm::perclk::CLKSEL::IPG(ipg_hz),
-    );
-
-    let (timer0, timer1, _, _) = p.pit.clock(&mut cfg);
-    let mut timer = pit::chain(timer0, timer1);
 
     log::info!("Completed initialization");
 
@@ -93,6 +94,7 @@ fn main() -> ! {
             let delta = last_delta.as_secs_f32();
 
             teensy41_hardware.read_sensors();
+            teensy41_hardware.update_spark(delta);
 
             ecu.update(
                 &mut HALs {
@@ -101,19 +103,21 @@ fn main() -> ! {
                 },
                 delta,
             );
-            
+
             if counter > 1.0 {
                 led.toggle();
+                log::info!("Pulse");
 
                 counter = 0.0;
             }
-    
+
             counter += delta;
         });
 
-        match period {
-            Some(period) => last_delta = period,
-            None => log::error!("Loop timer expired!")
+        if let Some(period) = period {
+            last_delta = period;
+        } else {
+            log::error!("Loop timer expired!");
         }
     }
 }

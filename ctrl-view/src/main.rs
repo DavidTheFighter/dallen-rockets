@@ -1,19 +1,23 @@
-use std::{io::stdout, sync::{
+use std::{
+    io::stdout,
+    sync::{
         atomic::{AtomicBool, Ordering},
         mpsc,
-    }, time::Instant};
+    },
+    time::Instant,
+};
 
 use crossterm::event::{self, Event, KeyCode, KeyEvent};
 use display::ConsoleDisplay;
 use hal::{
-    comms_hal::Packet,
+    comms_hal::{ECUTelemtryData, Packet},
     ecu_hal::{ECUSensor, ECUValve, IgniterState, ECU_SENSORS, ECU_VALVES},
 };
 use recv::RecvOutput;
 
 pub mod display;
-pub mod recv;
 pub mod record;
+pub mod recv;
 
 pub(crate) static RUNNING: AtomicBool = AtomicBool::new(true);
 
@@ -22,18 +26,16 @@ pub const WATCHDOG_TIMEOUT_MS: usize = 250;
 const DISPLAY_SENSORS: [(ECUSensor, &str, &str); 5] = [
     (ECUSensor::FuelTankPressure, "Fuel Tank", "psi"),
     (ECUSensor::IgniterThroatTemp, "IGN Throat", "\u{b0}C"),
-    (ECUSensor::IgniterFuelInjectorPressure, "IGN Fuel-Inj", "psi"),
+    (
+        ECUSensor::IgniterFuelInjectorPressure,
+        "IGN Fuel-Inj",
+        "psi",
+    ),
     (ECUSensor::IgniterGOxInjectorPressure, "IGN GOx-Inj", "psi"),
     (ECUSensor::IgniterChamberPressure, "IGN Chamber", "psi"),
 ];
 
-const SENSORS_CONFIG: [f32; 5] = [
-    4096.0,
-    200.0,
-    150.0,
-    150.0,
-    300.0,
-];
+const SENSORS_CONFIG: [f32; 5] = [4096.0, 300.0, 200.0, 200.0, 300.0];
 
 const DISPLAY_VALVES: [(ECUValve, &str); 4] = [
     (ECUValve::FuelPress, "Fuel Press"),
@@ -62,6 +64,7 @@ fn main() {
     display.set_misc("ECU Loop Freq", "0 Hz");
     display.set_misc("Recv ECU Freq", "0 Hz");
     display.set_misc("Recording", "false");
+    display.set_misc("counter", "0");
 
     let (recv_thread_tx, recv_thread_rx) = mpsc::channel();
     let (record_thread_tx, record_thread_rx) = mpsc::channel();
@@ -78,6 +81,7 @@ fn main() {
     let mut cet_timer_ms: usize = WATCHDOG_TIMEOUT_MS;
     let mut ecu_telem_counter: usize = 0;
     let mut timer: f64 = 0.0;
+    let mut counter = 0;
     let mut recording = false;
 
     loop {
@@ -101,20 +105,32 @@ fn main() {
                 Ok(recv_output) => {
                     if let RecvOutput::Packet(packet) = &recv_output {
                         match packet {
+                            Packet::RecordedData(data) => {
+                                record_thread_tx
+                                    .send(ECUTelemtryData {
+                                        ecu_data: *data,
+                                        max_loop_time: -42.0,
+                                    })
+                                    .unwrap();
+                                counter += 1;
+                            }
                             Packet::ECUTelemtry(data) => {
                                 ecu_timer_ms = 0;
                                 ecu_telem_counter += 1;
 
-                                if recording {
-                                    record_thread_tx.send(data.clone()).unwrap();
-                                }
-
-                                for ((value, sensor), range) in
-                                    data.ecu_data.sensor_states.iter().zip(ECU_SENSORS.iter()).zip(SENSORS_CONFIG.iter())
+                                for ((value, sensor), range) in data
+                                    .ecu_data
+                                    .sensor_states
+                                    .iter()
+                                    .zip(ECU_SENSORS.iter())
+                                    .zip(SENSORS_CONFIG.iter())
                                 {
+                                    let voltage = 5.0 * ((*value as f32) / 4095.0);
+                                    let lerp = (voltage - 0.5) / 4.0;
+
                                     display.set_sensor_value(
                                         &format!("{:?}", *sensor),
-                                        ((*value as f32) / 4096.0) * (*range),
+                                        lerp * (*range),
                                         true,
                                     )
                                 }
@@ -125,10 +141,27 @@ fn main() {
                                     display.set_valve_value(&format!("{:?}", *valve), *value > 0);
                                 }
 
-                                display.set_misc("IGN State", &format!("{:?}", data.ecu_data.igniter_state));
-                                display.set_misc("Spark", if data.ecu_data.sparking { "Sparking" } else { "Off" });
-                                display.set_misc("ECU Max Δt", &format!("{:.3} ms", data.avg_loop_time * 1000.0));
-                                display.set_misc("ECU Loop Freq", &format!("{:.1} kHz", 1e-3 / data.avg_loop_time));
+                                display.set_misc(
+                                    "IGN State",
+                                    &format!("{:?}", data.ecu_data.igniter_state),
+                                );
+                                display.set_misc(
+                                    "Spark",
+                                    if data.ecu_data.sparking {
+                                        "Sparking"
+                                    } else {
+                                        "Off"
+                                    },
+                                );
+                                display.set_misc(
+                                    "ECU Max Δt",
+                                    &format!("{:.3} ms", data.max_loop_time * 1000.0),
+                                );
+                                display.set_misc(
+                                    "ECU Loop Freq",
+                                    &format!("{:.1} kHz", 1e-3 / data.max_loop_time),
+                                );
+                                display.set_misc("counter", &format!("{}", counter));
                             }
                             _ => {}
                         }

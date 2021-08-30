@@ -1,5 +1,9 @@
 use ecu::{Ecu, HALs};
-use hal::{comms_mock::CommsMock, ecu_hal::{ECUHardware, ECUValve, ECU_VALVES}, ecu_mock::ECUHardwareMock};
+use hal::{
+    comms_mock::CommsMock,
+    ecu_hal::{ECUHardware, ECUValve, ECU_VALVES},
+    ecu_mock::ECUHardwareMock,
+};
 
 macro_rules! hals {
     ($hardware:ident, $comms:ident) => {
@@ -27,5 +31,5 @@ fn test_valve_startup_states() {
     assert!(ecu_hardware.get_valve_states()[ECUValve::IgniterFuelMain as usize] == 0);
     assert!(ecu_hardware.get_valve_states()[ECUValve::IgniterGOxMain as usize] == 0);
     assert!(ecu_hardware.get_valve_states()[ECUValve::FuelPress as usize] == 0);
-    assert!(ecu_hardware.get_valve_states()[ECUValve::FuelVent as usize] == 255);
+    assert!(ecu_hardware.get_valve_states()[ECUValve::FuelVent as usize] == 0);
 }

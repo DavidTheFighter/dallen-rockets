@@ -1,26 +1,15 @@
 use embedded_hal::adc::OneShot;
 use hal::{
-    ecu_hal::{
-        ECUHardware, ECUSensor, ECUValve, ECU_SENSORS, MAX_ECU_SENSORS, MAX_ECU_VALVES,
-    },
+    ecu_hal::{ECUHardware, ECUSensor, ECUValve, ECU_SENSORS, MAX_ECU_SENSORS, MAX_ECU_VALVES},
     SensorConfig,
 };
-use teensy4_bsp::{
-    hal::{
-        adc::{AnalogInput, ResolutionBits, ADC},
-        gpio::{Output, GPIO},
-        iomuxc::adc::ADC1,
-    },
-    t41,
-};
+use teensy4_bsp::{hal::{adc::{AnalogInput, ResolutionBits, ADC}, gpio::{Output, GPIO}, iomuxc::adc::ADC1}, t41};
 
 pub struct Teensy41ECUHardware {
     sv1_pin: GPIO<t41::P2, Output>,
     sv2_pin: GPIO<t41::P3, Output>,
     sv3_pin: GPIO<t41::P4, Output>,
-    sv4_pin: GPIO<t41::P5, Output>,
-    _sv5_pin: GPIO<t41::P6, Output>,
-    _sv6_pin: GPIO<t41::P7, Output>,
+    sv4_pin: GPIO<t41::P6, Output>,
     spark_pin: GPIO<t41::P8, Output>,
     t1_pin: AnalogInput<ADC1, t41::P23>,
     _t2_pin: AnalogInput<ADC1, t41::P22>,
@@ -40,6 +29,9 @@ pub struct Teensy41ECUHardware {
     raw_sensor_readings: [u16; MAX_ECU_SENSORS],
     sensor_readings: [f32; MAX_ECU_SENSORS],
     sparking: bool,
+    time_since_last_spark: f32,
+    spark_frequency: f32,
+    spark_duty_cycle: f32,
 }
 
 impl Teensy41ECUHardware {
@@ -48,9 +40,7 @@ impl Teensy41ECUHardware {
         sv1_pin: GPIO<t41::P2, Output>,
         sv2_pin: GPIO<t41::P3, Output>,
         sv3_pin: GPIO<t41::P4, Output>,
-        sv4_pin: GPIO<t41::P5, Output>,
-        sv5_pin: GPIO<t41::P6, Output>,
-        sv6_pin: GPIO<t41::P7, Output>,
+        sv4_pin: GPIO<t41::P6, Output>,
         spark_pin: GPIO<t41::P8, Output>,
         t1_pin: AnalogInput<ADC1, t41::P23>,
         t2_pin: AnalogInput<ADC1, t41::P22>,
@@ -71,8 +61,6 @@ impl Teensy41ECUHardware {
             sv2_pin,
             sv3_pin,
             sv4_pin,
-            _sv5_pin: sv5_pin,
-            _sv6_pin: sv6_pin,
             spark_pin,
             t1_pin,
             _t2_pin: t2_pin,
@@ -92,6 +80,9 @@ impl Teensy41ECUHardware {
             raw_sensor_readings: [0_u16; MAX_ECU_SENSORS],
             sensor_readings: [0.0_f32; MAX_ECU_SENSORS],
             sparking: false,
+            time_since_last_spark: 0.0,
+            spark_frequency: 0.01,
+            spark_duty_cycle: 0.5,
         };
 
         inst.adc1.set_resolution(ResolutionBits::Res12);
@@ -110,6 +101,19 @@ impl Teensy41ECUHardware {
 
             self.raw_sensor_readings[index] = raw_reading;
             self.sensor_readings[index] = reading;
+        }
+    }
+
+    pub fn update_spark(&mut self, elapsed: f32) {
+        if self.sparking {
+            self.time_since_last_spark += elapsed;
+
+            if self.time_since_last_spark > self.spark_frequency {
+                self.spark_pin.set();
+                self.time_since_last_spark -= self.spark_frequency;
+            } else if self.time_since_last_spark > self.spark_frequency * self.spark_duty_cycle {
+                self.spark_pin.clear();
+            }
         }
     }
 
@@ -137,18 +141,20 @@ macro_rules! set_gpio {
 impl ECUHardware for Teensy41ECUHardware {
     fn set_valve(&mut self, valve: ECUValve, state: u8) {
         match valve {
-            ECUValve::FuelPress => set_gpio!(self.sv1_pin, state > 0),
-            ECUValve::FuelVent => set_gpio!(self.sv2_pin, state > 0),
-            ECUValve::IgniterFuelMain => set_gpio!(self.sv3_pin, state > 0),
-            ECUValve::IgniterGOxMain => set_gpio!(self.sv4_pin, state > 0),
+            ECUValve::IgniterFuelMain => set_gpio!(self.sv1_pin, state > 0),
+            ECUValve::IgniterGOxMain => set_gpio!(self.sv2_pin, state > 0),
+            ECUValve::FuelPress => set_gpio!(self.sv3_pin, state > 0),
+            ECUValve::FuelVent => set_gpio!(self.sv4_pin, state > 0),
         };
 
         self.valve_states[valve as usize] = state;
     }
 
     fn set_sparking(&mut self, state: bool) {
-        set_gpio!(self.spark_pin, state);
         self.sparking = state;
+        self.time_since_last_spark = 0.0;
+
+        set_gpio!(self.spark_pin, state);
     }
 
     fn get_sensor_value(&self, sensor: ECUSensor) -> f32 {

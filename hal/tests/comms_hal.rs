@@ -46,7 +46,7 @@ fn canfd_serialize_deserialize_eq() {
         let len = comms_canfd_hal::serialize_packet(packet, &mut buffer).unwrap();
         let metadata = CANFDPacketMetadata::from_byte_slice(&buffer);
 
-        assert!(len == metadata.get_true_data_length());
+        assert!((len - 4) == metadata.get_true_data_length());
 
         let other_packet = comms_canfd_hal::deserialize_packet(&mut buffer).unwrap();
 
@@ -82,11 +82,12 @@ fn ethernet_serialize_deserialize_eq() {
     }
 }
 
-fn get_all_packets() -> [Packet; 7] {
+fn get_all_packets() -> [Packet; 11] {
     let set_valve = Packet::SetValve {
         valve: ECUValve::FuelPress,
         state: 42,
     };
+    let set_sparking = Packet::SetSparking(0.42);
     let fire_igniter = Packet::FireIgniter;
     let configure_sensor = Packet::ConfigureSensor {
         sensor: ECUSensor::FuelTankPressure,
@@ -100,39 +101,53 @@ fn get_all_packets() -> [Packet; 7] {
     let configure_igniter_timing = Packet::ConfigureIgniterTiming(IgniterTimingConfig {
         prefire_duration_ms: 42,
         fire_duration_ms: 420,
-        purge_duration_ms: 49,
     });
     let abort = Packet::Abort;
     let ecu_telemetry = Packet::ECUTelemtry(ECUTelemtryData {
         ecu_data: ECUDataFrame {
-            time: 420.69,
             igniter_state: hal::ecu_hal::IgniterState::Idle,
             sensor_states: [69_u16; MAX_ECU_SENSORS],
             valve_states: [42_u8; MAX_ECU_VALVES],
             sparking: false,
         },
-        avg_loop_time: 420.420,
         max_loop_time: 69.96,
     });
     let controller_aborted = Packet::ControllerAborted(NetworkAddress::MissionControl);
+    let set_recording = Packet::SetRecording(true);
+    let transfer_data = Packet::TransferData;
+    let recorded_data = Packet::RecordedData(ECUDataFrame {
+        igniter_state: hal::ecu_hal::IgniterState::Idle,
+        sensor_states: [69_u16; MAX_ECU_SENSORS],
+        valve_states: [42_u8; MAX_ECU_VALVES],
+        sparking: false,
+    });
 
+    // Remember to create a packet so its serialization/deserialization can be tested
     match set_valve {
         Packet::SetValve { .. } => println!("test"),
+        Packet::SetSparking(_) => println!("test"),
         Packet::FireIgniter => println!("test"),
         Packet::ConfigureSensor { .. } => println!("test"),
         Packet::ConfigureIgniterTiming(_) => println!("test"),
         Packet::Abort => println!("test"),
         Packet::ECUTelemtry(_) => println!("test"),
         Packet::ControllerAborted(_) => println!("test"),
+        Packet::SetRecording(_) => println!("test"),
+        Packet::TransferData => println!("test"),
+        Packet::RecordedData(_) => println!("test"),
     }
 
     [
         set_valve,
+        set_sparking,
         fire_igniter,
         configure_sensor,
         configure_igniter_timing,
         abort,
         ecu_telemetry,
         controller_aborted,
+        set_recording,
+        transfer_data,
+        recorded_data,
     ]
 }

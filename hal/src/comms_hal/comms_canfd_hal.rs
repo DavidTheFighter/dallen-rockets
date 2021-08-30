@@ -56,7 +56,7 @@ pub fn serialize_packet(
                 ));
             }
 
-            Ok(len)
+            Ok(len + 4)
         }
         Err(err) => Err(TransferError::Serialization(err)),
     }

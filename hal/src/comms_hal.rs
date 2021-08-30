@@ -65,6 +65,7 @@ pub enum Packet {
         valve: ECUValve,
         state: u8,
     },
+    SetSparking(f32),
     FireIgniter,
     ConfigureSensor {
         sensor: ECUSensor,
@@ -76,6 +77,9 @@ pub enum Packet {
     // -- Telemetry -- //
     ECUTelemtry(ECUTelemtryData),
     ControllerAborted(NetworkAddress),
+    SetRecording(bool),
+    TransferData,
+    RecordedData(ECUDataFrame),
     // -- Data transfer -- //
 }
 
@@ -131,6 +135,5 @@ impl Packet {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ECUTelemtryData {
     pub ecu_data: ECUDataFrame,
-    pub avg_loop_time: f32, // In seconds
     pub max_loop_time: f32, // In seconds
 }

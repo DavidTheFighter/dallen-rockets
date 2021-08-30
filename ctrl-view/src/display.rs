@@ -63,7 +63,7 @@ impl ConsoleDisplay {
             } else {
                 queue!(self.stdout, cursor::MoveToNextLine(1)).unwrap();
             }
-            
+
             queue!(self.stdout, style::Print(format!("{}: ", name))).unwrap();
 
             let value_string = format!("{:.1}", value);
@@ -228,8 +228,7 @@ impl ConsoleDisplay {
         }
 
         if !found {
-            self.misc
-                .push((String::from(name), String::from(value)));
+            self.misc.push((String::from(name), String::from(value)));
         }
     }
 

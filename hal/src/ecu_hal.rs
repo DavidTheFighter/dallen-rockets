@@ -42,7 +42,6 @@ pub enum IgniterState {
     Idle,
     Prefire,
     Firing,
-    Purge,
 }
 
 pub trait ECUHardware {
@@ -60,9 +59,8 @@ pub trait ECUHardware {
     fn configure_sensor(&mut self, sensor: ECUSensor, config: &SensorConfig);
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
 pub struct ECUDataFrame {
-    pub time: f32,
     pub igniter_state: IgniterState,
     pub sensor_states: [u16; MAX_ECU_SENSORS],
     pub valve_states: [u8; MAX_ECU_VALVES],
@@ -73,5 +71,4 @@ pub struct ECUDataFrame {
 pub struct IgniterTimingConfig {
     pub prefire_duration_ms: u16,
     pub fire_duration_ms: u16,
-    pub purge_duration_ms: u16,
 }

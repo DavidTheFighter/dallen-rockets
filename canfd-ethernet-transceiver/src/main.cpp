@@ -170,9 +170,15 @@ void loop() {
     msg.id = recv.to_address & ID_5_BIT_MASK;
     msg.id += (recv.from_address & ID_5_BIT_MASK) << FROM_ADDRESS_SHIFT;
     msg.id += (recv.data_len + 4 > 32 ? 1 : 0) << 5;
-    msg.len = recv.data_len + 4;
+    msg.len = max(recv.data_len + 4, 8);
     memcpy(&msg.buf[0], &ctrl, sizeof(ctrl));
-    memcpy(&msg.buf[4], recv.data, recv.data_len);
+    memcpy(&msg.buf[4], recv.data, sizeof(recv.data));
+
+    for (int i = 0; i < msg.len; i++) {
+      Serial.print(msg.buf[i]);
+      Serial.print(", ");
+    }
+    Serial.print("\n");
 
     can3.write(msg);
   }

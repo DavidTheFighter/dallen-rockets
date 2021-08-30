@@ -51,7 +51,7 @@ pub fn deserialize_packet(
 
     match (from_address, to_address) {
         (Some(from_address), Some(to_address)) => {
-            match Packet::deserialize(&mut buffer[6..6 + len]) {
+            match Packet::deserialize(&mut buffer[6..(6 + len)]) {
                 Ok(packet) => Ok((packet, from_address, to_address)),
                 Err(err) => Err(err),
             }

@@ -6,7 +6,6 @@ use hal::{
 
 pub const DEFAULT_IGNITER_PREFIRE_DURATION_MS: u16 = 250;
 pub const DEFAULT_IGNITER_FIRE_DURATION_MS: u16 = 1000;
-pub const DEFAULT_IGNITER_PURGE_DURATION_MS: u16 = 2000;
 
 pub struct Igniter {
     timing_config: IgniterTimingConfig,
@@ -20,7 +19,6 @@ impl Igniter {
             timing_config: IgniterTimingConfig {
                 prefire_duration_ms: DEFAULT_IGNITER_PREFIRE_DURATION_MS,
                 fire_duration_ms: DEFAULT_IGNITER_FIRE_DURATION_MS,
-                purge_duration_ms: DEFAULT_IGNITER_PURGE_DURATION_MS,
             },
             current_state_enum: IgniterState::Idle,
             elapsed_since_state_transition: 0.0,
@@ -34,7 +32,6 @@ impl Igniter {
             IgniterState::Idle => {}
             IgniterState::Prefire => self.update_prefire_state(hals),
             IgniterState::Firing => self.update_firing_state(hals),
-            IgniterState::Purge => self.update_purging_state(hals),
         }
     }
 
@@ -66,7 +63,6 @@ impl Igniter {
             IgniterState::Idle => self.enter_idle_state(hals),
             IgniterState::Prefire => self.enter_prefire_state(hals),
             IgniterState::Firing => self.enter_firing_state(hals),
-            IgniterState::Purge => self.enter_purging_state(hals),
         }
     }
 
@@ -83,7 +79,7 @@ impl Igniter {
 
     #[allow(clippy::unused_self)]
     fn enter_prefire_state(&mut self, hals: &mut HALs) {
-        hals.hardware.set_sparking(true);
+        hals.hardware.set_sparking(false);
         hals.hardware.set_valve(ECUValve::IgniterFuelMain, 0);
         hals.hardware.set_valve(ECUValve::IgniterGOxMain, 255);
     }
@@ -109,23 +105,7 @@ impl Igniter {
         if self.elapsed_since_state_transition
             > f32::from(self.timing_config.fire_duration_ms) * 1e-3
         {
-            self.transition_state(IgniterState::Purge, hals);
-        }
-    }
-
-    // ----- Purging State ----- //
-
-    #[allow(clippy::unused_self)]
-    fn enter_purging_state(&mut self, hals: &mut HALs) {
-        hals.hardware.set_sparking(false);
-        hals.hardware.set_valve(ECUValve::IgniterFuelMain, 0);
-        hals.hardware.set_valve(ECUValve::IgniterGOxMain, 255);
-    }
-
-    fn update_purging_state(&mut self, hals: &mut HALs) {
-        if self.elapsed_since_state_transition
-            > f32::from(self.timing_config.purge_duration_ms) * 1e-3
-        {
+            hals.hardware.set_valve(ECUValve::FuelPress, 0);
             self.transition_state(IgniterState::Idle, hals);
         }
     }

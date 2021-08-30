@@ -1,8 +1,6 @@
-use core::cell::RefCell;
-
-use cortex_m::interrupt::{CriticalSection, Mutex};
-use teensy4_canfd::{RxFDFrame, config::Id};
 use atomic_queue::AtomicQueue;
+use cortex_m::interrupt::CriticalSection;
+use teensy4_canfd::{config::Id, RxFDFrame};
 
 #[derive(Debug, Clone, Copy)]
 struct FrameWrapper {
@@ -13,23 +11,13 @@ struct FrameWrapper {
     pub error_state: bool,
 }
 
-fn empty_rx_frame() -> FrameWrapper {
-    FrameWrapper {
-        id: Id::Standard(0),
-        buffer_len: 0,
-        buffer: [0_u8; 64],
-        timestamp: 0,
-        error_state: false,
-    }
-}
-
 fn from_rx_frame(rx_frame: &RxFDFrame) -> FrameWrapper {
     let mut frame = FrameWrapper {
         id: rx_frame.id,
         buffer_len: rx_frame.buffer_len,
         buffer: [0_u8; 64],
         timestamp: rx_frame.timestamp,
-        error_state: rx_frame.error_state
+        error_state: rx_frame.error_state,
     };
 
     for (to, from) in frame.buffer.iter_mut().zip(rx_frame.buffer.iter()) {
@@ -45,7 +33,7 @@ fn from_frame(frame: &FrameWrapper) -> RxFDFrame {
         buffer_len: frame.buffer_len,
         buffer: [0_u8; 64],
         timestamp: frame.timestamp,
-        error_state: frame.error_state
+        error_state: frame.error_state,
     };
 
     for (to, from) in rx_frame.buffer.iter_mut().zip(frame.buffer.iter()) {
@@ -74,16 +62,11 @@ lazy_static! {
 
 #[allow(clippy::needless_pass_by_value)]
 pub fn on_canfd_frame(_cs: &CriticalSection, rx_frame: RxFDFrame) {
-    QUEUE.push(from_rx_frame(&rx_frame));
-
-    log::info!("CAN FRAME");
+    if let Err(err) = QUEUE.push(from_rx_frame(&rx_frame)) {
+        log::error!("Failed to push CANFD frame onto comms queue, got {:?}", err);
+    }
 }
 
 pub fn pop_rx_frame(_cs: &CriticalSection) -> Option<RxFDFrame> {
-    let frame = QUEUE.pop();
-
-    match frame {
-        Some(frame) => Some(from_frame(&frame)),
-        None => None
-    }
+    QUEUE.pop().map(|frame| from_frame(&frame))
 }
