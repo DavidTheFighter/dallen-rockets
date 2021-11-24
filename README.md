@@ -1,0 +1,2 @@
+This repo contains all of the code used in my rocketry endeavors. Primarily this contains the controller software for the Engine Controller Unit (ECU) for my torch igniter. Here's a video of it firing:
+<iframe width="560" height="315" src="https://www.youtube.com/embed/-9BFntb9QIs" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
